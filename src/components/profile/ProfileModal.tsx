@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   usePlayerProfile,
   profileService,
-  PRESET_AVATARS,
   PlayerProfile,
 } from '../../services/profile/profileService';
 import { SkillLevel } from '../../types';
@@ -78,11 +77,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         fileInputRef.current.value = '';
       }
     }
-  };
-
-  const handleSelectPreset = (url: string) => {
-    setAvatarUrl(url);
-    setError(null);
   };
 
   const handleRemoveAvatar = () => {
@@ -247,37 +241,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <span>Remove</span>
                   </button>
                 )}
-              </div>
-            </div>
-
-            {/* Quick 3D Clay Mascot Presets */}
-            <div className="pt-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-2">
-                Or choose a pickleball avatar
-              </span>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                {PRESET_AVATARS.map((preset) => {
-                  const isSelected = avatarUrl === preset.url;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handleSelectPreset(preset.url)}
-                      className={`w-10 h-10 rounded-2xl overflow-hidden p-1 transition-all clay-btn cursor-pointer ${
-                        isSelected
-                          ? 'ring-2 ring-emerald-500 scale-110 shadow-md bg-emerald-50'
-                          : 'opacity-80 hover:opacity-100 hover:scale-105 bg-white'
-                      }`}
-                      title={preset.name}
-                    >
-                      <img
-                        src={preset.url}
-                        alt={preset.name}
-                        className="w-full h-full object-contain rounded-xl"
-                      />
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </div>

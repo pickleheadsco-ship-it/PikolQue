@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   usePlayerProfile,
   profileService,
-  PRESET_AVATARS,
   PlayerProfile,
 } from '../services/profile/profileService';
 import { SkillLevel } from '../types';
@@ -80,13 +79,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         fileInputRef.current.value = '';
       }
     }
-  };
-
-  const handleSelectPreset = (url: string) => {
-    setAvatarUrl(url);
-    updateProfile({ avatarUrl: url });
-    setError(null);
-    firePickleballBurst(window.innerWidth / 2, 200);
   };
 
   const handleRemovePhoto = () => {
@@ -311,37 +303,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     <span>Remove</span>
                   </button>
                 )}
-              </div>
-            </div>
-
-            {/* 3D Clay Mascot Presets */}
-            <div className="pt-3">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block mb-2.5">
-                Or choose a 3D Pickleball Avatar
-              </span>
-              <div className="flex items-center justify-center gap-2.5 flex-wrap">
-                {PRESET_AVATARS.map((preset) => {
-                  const isSelected = avatarUrl === preset.url;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handleSelectPreset(preset.url)}
-                      className={`w-12 h-12 rounded-2xl overflow-hidden p-1.5 transition-all clay-btn cursor-pointer ${
-                        isSelected
-                          ? 'ring-3 ring-emerald-500 scale-110 shadow-md bg-emerald-50'
-                          : 'opacity-80 hover:opacity-100 hover:scale-105 bg-white'
-                      }`}
-                      title={preset.name}
-                    >
-                      <img
-                        src={preset.url}
-                        alt={preset.name}
-                        className="w-full h-full object-contain rounded-xl"
-                      />
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </div>
