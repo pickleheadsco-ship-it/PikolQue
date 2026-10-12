@@ -15,6 +15,7 @@ import {
   Save,
 } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
 
 interface AdminDashboardProps {
   onBackToHome: () => void;
@@ -85,6 +86,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <ArrowLeft className="w-4 h-4" />
             </button>
             <BrandLogo size="xs" />
+            <ProfileAvatarBadge size="xs" />
             <div className="flex items-center gap-2">
               <h1 className="font-black text-sm sm:text-base tracking-tight text-white">Administrator Console</h1>
               <ShieldCheck className="w-4 h-4 text-purple-400" />

@@ -318,14 +318,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
       {/* Hero Section */}
       <main className="max-w-6xl mx-auto px-4 py-8 sm:py-12 flex-1 w-full relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 relative z-20">
-          {/* Interactive Brand Logo Highlight with Pickleball Burst */}
-          <div className="flex justify-center mb-5">
+          {/* Interactive Brand Logo and Player Profile Photo Reflection */}
+          <div className="flex items-center justify-center gap-3.5 sm:gap-6 mb-5">
             <div
               className="relative group cursor-pointer"
               onClick={(e) => firePickleballBurst(e.clientX, e.clientY)}
               title="Click to burst pickleballs! 🎾"
             >
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl overflow-hidden clay-card p-2.5 transform transition-all group-hover:scale-105 active:scale-95 bg-white">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl overflow-hidden clay-card p-2 transform transition-all group-hover:scale-105 active:scale-95 bg-white">
                 <img
                   src="/logo.png"
                   alt="Pickleheads Brand Logo"
@@ -334,6 +334,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                   draggable={false}
                 />
               </div>
+            </div>
+
+            {/* Uploaded Player Photo on the Right Side of the Logo */}
+            <div className="flex flex-col items-center">
+              <ProfileAvatarBadge
+                size="xl"
+                onClick={() => setShowProfileModal(true)}
+              />
+              <span className="text-[10px] font-black text-emerald-800 bg-white/90 px-2 py-0.5 rounded-full clay-subcard shadow-2xs mt-1.5">
+                Player Photo
+              </span>
             </div>
           </div>
 

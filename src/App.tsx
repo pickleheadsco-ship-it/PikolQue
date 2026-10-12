@@ -7,13 +7,15 @@ import { PlayerSession } from './pages/PlayerSession';
 import { JoinSession } from './pages/JoinSession';
 import { SessionSummary } from './pages/SessionSummary';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { ProfilePage } from './pages/ProfilePage';
 
-type AppView = 'landing' | 'organizer' | 'player' | 'join' | 'summary' | 'admin';
+type AppView = 'landing' | 'organizer' | 'player' | 'join' | 'summary' | 'admin' | 'profile';
 
 function AppRouter() {
   const { setSessionId } = useSession();
   const [view, setView] = useState<AppView>('landing');
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [previousView, setPreviousView] = useState<AppView>('landing');
 
   // Initialize view from URL path and support mobile browser back/forward buttons
   useEffect(() => {
@@ -39,6 +41,8 @@ function AppRouter() {
         setView('summary');
       } else if (parts[0] === 'admin') {
         setView('admin');
+      } else if (parts[0] === 'profile') {
+        setView('profile');
       } else {
         setView('landing');
         setActiveSessionId(null);
@@ -77,7 +81,31 @@ function AppRouter() {
     window.history.pushState({}, '', '/');
   };
 
+  const handleBackFromProfile = () => {
+    if (activeSessionId) {
+      const savedId = localStorage.getItem('picklequeue_participant_id');
+      if (savedId) {
+        setView('player');
+        window.history.pushState({}, '', `/player/${activeSessionId}`);
+      } else {
+        setView('join');
+        window.history.pushState({}, '', `/join/${activeSessionId}`);
+      }
+    } else {
+      handleBackToHome();
+    }
+  };
+
   switch (view) {
+    case 'profile':
+      return (
+        <ProfilePage
+          onBack={handleBackFromProfile}
+          sessionId={activeSessionId}
+          participantId={localStorage.getItem('picklequeue_participant_id')}
+        />
+      );
+
     case 'organizer':
       return (
         <OrganizerDashboard

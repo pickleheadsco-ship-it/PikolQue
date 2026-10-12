@@ -284,6 +284,30 @@ export const JoinSession: React.FC<JoinSessionProps> = ({
         ) : (
           /* JOIN FORM WITH STRICT FIRST NAME & SURNAME */
           <form onSubmit={handleJoin} className="space-y-4">
+            {/* Quick Profile Photo Reflection Banner */}
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 clay-inset">
+              <div className="flex items-center gap-2.5">
+                <ProfileAvatarBadge
+                  size="sm"
+                  onClick={() => setShowProfileModal(true)}
+                />
+                <div>
+                  <span className="text-xs font-black text-slate-800 block">
+                    {profile.avatarUrl ? 'Photo Uploaded' : 'Add Player Photo'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium block">
+                    Reflects next to the logo & on queue
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                className="px-2.5 py-1 rounded-xl clay-btn clay-btn-secondary text-[11px] font-bold text-emerald-700 cursor-pointer"
+              >
+                {profile.avatarUrl ? 'Change' : 'Upload'}
+              </button>
+            </div>
             {/* DUPLICATE WARNING CALLOUT */}
             {duplicateWarning && (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs space-y-2 animate-in fade-in">

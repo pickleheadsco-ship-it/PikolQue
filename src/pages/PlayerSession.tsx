@@ -159,8 +159,12 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col justify-between max-w-md mx-auto p-4 sm:p-6">
         <div className="clay-card rounded-3xl p-7 text-center my-auto">
-          <div className="flex justify-center mb-4">
+          <div className="flex items-center justify-center gap-3.5 mb-4">
             <BrandLogo size="lg" />
+            <ProfileAvatarBadge
+              size="lg"
+              onClick={() => setShowProfileModal(true)}
+            />
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">{session.name}</h2>
           <p className="text-xs text-slate-500 font-medium mt-1">{session.venueName}</p>
@@ -424,10 +428,18 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
             <div className="clay-card rounded-3xl p-5 relative overflow-hidden">
               <div className="flex items-center justify-between mb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="clay-pill bg-emerald-600 text-white text-[11px] font-black px-3 py-1 rounded-xl tracking-wider uppercase shadow-xs">
-                    YOU
-                  </span>
-                  <span className="font-black text-slate-900 text-base">{currentParticipant.name}</span>
+                  <ProfileAvatarBadge
+                    size="sm"
+                    onClick={() => setShowProfileModal(true)}
+                  />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="clay-pill bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-lg tracking-wider uppercase shadow-xs">
+                        YOU
+                      </span>
+                      <span className="font-black text-slate-900 text-base leading-tight">{currentParticipant.name}</span>
+                    </div>
+                  </div>
                 </div>
                 <SkillBadge skill={currentParticipant.skillLevel} />
               </div>

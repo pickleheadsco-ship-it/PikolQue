@@ -3,6 +3,7 @@ import { useSession } from '../context/SessionContext';
 import { Participant, Match } from '../types';
 import { SkillBadge } from '../components/ui/Badge';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
 import { Trophy, ArrowLeft } from 'lucide-react';
 
 interface SessionSummaryProps {
@@ -64,8 +65,9 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
             <span className="hidden sm:inline">Back to Court</span>
           </button>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <BrandLogo size="xs" />
+            <ProfileAvatarBadge size="xs" />
             <div className="text-left">
               <h1 className="font-black text-sm sm:text-base text-slate-900 tracking-tight">Session Standings</h1>
               <p className="text-[10px] text-slate-500 font-bold">{session.name}</p>

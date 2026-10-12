@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   usePlayerProfile,
   profileService,
@@ -49,6 +49,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFirstName(profile.firstName || '');
+      setSurname(profile.surname || '');
+      setSkillLevel(profile.skillLevel || 'intermediate');
+      setAvatarUrl(profile.avatarUrl || '');
+    }
+  }, [isOpen, profile.firstName, profile.surname, profile.skillLevel, profile.avatarUrl]);
 
   if (!isOpen) return null;
 

@@ -16,12 +16,12 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   interactive = true,
   onClick,
 }) => {
-  const sizeMap = {
+  const sizeMap: Record<string, string> = {
     xs: 'w-8 h-8',
     sm: 'w-10 h-10',
     md: 'w-12 h-12',
-    lg: 'w-18 h-18',
-    xl: 'w-28 h-28',
+    lg: 'w-16 h-16 sm:w-20 sm:h-20',
+    xl: 'w-24 h-24 sm:w-28 sm:h-28',
   };
 
   const handleClick = (e: React.MouseEvent) => {
