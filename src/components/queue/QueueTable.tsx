@@ -98,6 +98,17 @@ export const QueueTable: React.FC<QueueTableProps> = ({
                     ) : (
                       <span className="text-slate-400 text-xs font-mono">-</span>
                     )}
+                    {p.avatarUrl ? (
+                      <img
+                        src={p.avatarUrl}
+                        alt={p.name}
+                        className="w-6 h-6 rounded-xl object-cover shrink-0 border border-slate-200 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shrink-0">
+                        {p.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <span className="font-bold text-slate-900 text-sm">{p.name}</span>
                   </div>
 
@@ -202,6 +213,17 @@ export const QueueTable: React.FC<QueueTableProps> = ({
 
                     <td className="py-3 px-4 font-bold text-slate-900">
                       <div className="flex items-center gap-2">
+                        {p.avatarUrl ? (
+                          <img
+                            src={p.avatarUrl}
+                            alt={p.name}
+                            className="w-6 h-6 rounded-xl object-cover shrink-0 border border-slate-200 shadow-2xs"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shrink-0">
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="truncate max-w-[150px]">{p.name}</span>
                         {p.lastMatchResult && (
                           <span

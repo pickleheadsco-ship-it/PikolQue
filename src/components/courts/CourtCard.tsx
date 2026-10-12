@@ -126,6 +126,17 @@ export const CourtCard: React.FC<CourtCardProps> = ({
                   {teamAPlayers.map((p) => (
                     <div key={p.participantId} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 truncate">
+                        {p.avatarUrl ? (
+                          <img
+                            src={p.avatarUrl}
+                            alt={p.name}
+                            className="w-5 h-5 rounded-lg object-cover shrink-0 border border-slate-200"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-[9px] shrink-0">
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name}</span>
                         <SkillBadge skill={p.skillLevel} />
                       </div>
@@ -155,6 +166,17 @@ export const CourtCard: React.FC<CourtCardProps> = ({
                   {teamBPlayers.map((p) => (
                     <div key={p.participantId} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 truncate">
+                        {p.avatarUrl ? (
+                          <img
+                            src={p.avatarUrl}
+                            alt={p.name}
+                            className="w-5 h-5 rounded-lg object-cover shrink-0 border border-slate-200"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-black text-[9px] shrink-0">
+                            {p.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name}</span>
                         <SkillBadge skill={p.skillLevel} />
                       </div>

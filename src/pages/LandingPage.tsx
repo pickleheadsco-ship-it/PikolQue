@@ -19,6 +19,8 @@ import {
   Award,
 } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
+import { ProfileModal } from '../components/profile/ProfileModal';
 import { FloatingClayIcons } from '../components/ui/FloatingClayIcons';
 import { firePickleballBurst } from '../services/fx/pickleballBurst';
 import { OrganizerLoginModal } from '../components/auth/OrganizerLoginModal';
@@ -38,6 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
 
   // Organizer Login Modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // New Session Creation Form state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -184,8 +187,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
       {/* Top Navbar */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200/60 shadow-2xs">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <BrandLogo size="md" />
+            <ProfileAvatarBadge
+              size="md"
+              onClick={() => setShowProfileModal(true)}
+            />
             <div>
               <span className="font-black text-lg tracking-tight text-slate-900">PickleQueue</span>
               <span className="hidden sm:inline-block ml-2 text-xs font-bold px-2 py-0.5 rounded-xl bg-emerald-100 text-emerald-800 clay-pill">
@@ -642,6 +649,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
           }
         }}
       />
+
+      {/* Player Profile & Photo Upload Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={true}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </div>
   );
 };

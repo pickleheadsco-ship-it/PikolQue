@@ -246,6 +246,17 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
                       <span className="w-7 text-center font-black font-mono text-sm">
                         {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
                       </span>
+                      {player.avatarUrl ? (
+                        <img
+                          src={player.avatarUrl}
+                          alt={player.name}
+                          className="w-9 h-9 rounded-2xl object-cover shrink-0 border border-slate-200 shadow-2xs"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-2xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-xs shrink-0">
+                          {player.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="font-black text-slate-900 text-sm">{player.name}</span>
@@ -347,7 +358,18 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
 
                       {/* Name */}
                       <td className="py-3 px-4 font-black text-slate-900">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
+                          {player.avatarUrl ? (
+                            <img
+                              src={player.avatarUrl}
+                              alt={player.name}
+                              className="w-7 h-7 rounded-xl object-cover shrink-0 border border-slate-200 shadow-2xs"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shrink-0">
+                              {player.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <span>{player.name}</span>
                           {isHighlighted && (
                             <span className="text-[10px] font-black px-1.5 py-0.2 rounded-md bg-amber-200 text-amber-900">

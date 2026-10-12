@@ -4,6 +4,8 @@ import { Participant, Court, Match } from '../types';
 import { SkillBadge, StatusBadge } from '../components/ui/Badge';
 import { WaitTimeTracker, MatchTimer } from '../components/ui/WaitTimeTracker';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
+import { ProfileModal } from '../components/profile/ProfileModal';
 import { LiveLeaderboard } from '../components/leaderboard/LiveLeaderboard';
 import { MatchResultModal } from '../components/matches/MatchResultModal';
 import { NextPlayModal } from '../components/notifications/NextPlayModal';
@@ -53,6 +55,7 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
   const [isUpdatingRest, setIsUpdatingRest] = useState(false);
   const [showRecordResultModal, setShowRecordResultModal] = useState(false);
   const [playerTab, setPlayerTab] = useState<'myQueue' | 'leaderboard'>('myQueue');
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Push notifications & Next Play Pop-Up state
   const [notificationPerm, setNotificationPerm] = useState<NotificationPermission>(() =>
@@ -240,10 +243,14 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
       {/* Mobile Top Header */}
       <header className="bg-white/90 backdrop-blur-md px-4 py-3 sticky top-0 z-40 border-b border-slate-200/60 shadow-2xs">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <BrandLogo size="xs" />
+            <ProfileAvatarBadge
+              size="xs"
+              onClick={() => setShowProfileModal(true)}
+            />
             <div>
-              <h1 className="font-black text-slate-900 text-sm leading-tight tracking-tight truncate max-w-[170px]">
+              <h1 className="font-black text-slate-900 text-sm leading-tight tracking-tight truncate max-w-[140px] sm:max-w-[170px]">
                 {session.name}
               </h1>
               <p className="text-[10px] text-slate-500 font-bold">
@@ -638,6 +645,16 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
           setNextPlayAlert((prev) => ({ ...prev, open: false }));
         }}
       />
+
+      {/* Player Profile & Photo Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={true}
+          onClose={() => setShowProfileModal(false)}
+          sessionId={sessionId}
+          participantId={currentParticipant?.participantId}
+        />
+      )}
     </div>
   );
 };

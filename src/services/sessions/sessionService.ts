@@ -729,3 +729,42 @@ export async function bulkImportParticipants(
   }
   return count;
 }
+
+export async function updateParticipantAvatar(
+  sessionId: string,
+  participantId: string,
+  avatarUrl: string
+): Promise<void> {
+  const pRef = doc(db, `sessions/${sessionId}/participants`, participantId);
+  try {
+    await updateDoc(pRef, {
+      avatarUrl,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}/participants/${participantId}`);
+  }
+}
+
+export async function updateParticipantProfile(
+  sessionId: string,
+  participantId: string,
+  updates: {
+    name?: string;
+    firstName?: string;
+    surname?: string;
+    avatarUrl?: string;
+    skillLevel?: SkillLevel;
+  }
+): Promise<void> {
+  const pRef = doc(db, `sessions/${sessionId}/participants`, participantId);
+  try {
+    await updateDoc(pRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}/participants/${participantId}`);
+  }
+}
+

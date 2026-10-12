@@ -13,6 +13,8 @@ import { EndSessionModal } from '../components/shared/EndSessionModal';
 import { QRCodeDisplay } from '../components/qr/QRCodeDisplay';
 import { MatchTimer } from '../components/ui/WaitTimeTracker';
 import { BrandLogo } from '../components/ui/BrandLogo';
+import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
+import { ProfileModal } from '../components/profile/ProfileModal';
 import { speechService } from '../services/speech/speechService';
 import {
   startMatchOnCourt,
@@ -75,6 +77,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   const [showManualMatchModal, setShowManualMatchModal] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Result Modal State
   const [activeEndingCourt, setActiveEndingCourt] = useState<{ court: Court; match: Match } | null>(null);
@@ -239,6 +242,10 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
             </button>
 
             <BrandLogo size="sm" />
+            <ProfileAvatarBadge
+              size="sm"
+              onClick={() => setShowProfileModal(true)}
+            />
 
             <div>
               <div className="flex items-center gap-2">
@@ -613,6 +620,15 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Organizer / Staff Profile & Photo Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={true}
+          onClose={() => setShowProfileModal(false)}
+          sessionId={sessionId}
+        />
       )}
     </div>
   );
