@@ -8,7 +8,7 @@
     "build": "vite build && cp dist/index.html dist/200.html && rm -f dist/_redirects",
     "predeploy": "npm run build",
     "deploy": "npm run build && wrangler deploy",
-    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name=pickleheadsco",
+    "pages:deploy": "npm run build && wrangler pages deploy dist --project-name=pikolque",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
