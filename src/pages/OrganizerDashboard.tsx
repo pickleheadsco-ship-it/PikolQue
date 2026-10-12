@@ -15,6 +15,7 @@ import { MatchTimer } from '../components/ui/WaitTimeTracker';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
 import { ProfileModal } from '../components/profile/ProfileModal';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { speechService } from '../services/speech/speechService';
 import {
   startMatchOnCourt,
@@ -25,6 +26,7 @@ import {
   updateSessionMode,
   addCourtToSession,
   forceResetCourt,
+  createSession,
 } from '../services/sessions/sessionService';
 import {
   QrCode,
@@ -65,6 +67,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     isOnline,
     loading,
     error,
+    setSessionId,
   } = useSession();
 
   // Mobile section tab (Courts | Queue | Next | Leaderboard)
@@ -78,6 +81,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isAutoCreating, setIsAutoCreating] = useState(false);
 
   // Result Modal State
   const [activeEndingCourt, setActiveEndingCourt] = useState<{ court: Court; match: Match } | null>(null);
@@ -85,7 +89,28 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   // Selected participant IDs for manual operations
   const [selectedQueueIds, setSelectedQueueIds] = useState<string[]>([]);
 
-  if (loading) {
+  const handleLaunchEmergencySession = async () => {
+    setIsAutoCreating(true);
+    try {
+      const newId = await createSession({
+        name: 'PickleQueue Open Play',
+        venueName: 'Sunset Club Courts',
+        numberOfCourts: 3,
+        matchingMode: 'balanced',
+        organizerId: 'org-instant',
+      });
+      if (newId) {
+        setSessionId(newId);
+        window.history.pushState({}, '', `/organizer/${newId}`);
+      }
+    } catch (err) {
+      console.error('Failed to quick start session:', err);
+    } finally {
+      setIsAutoCreating(false);
+    }
+  };
+
+  if (loading && !session) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
         <div className="clay-card rounded-3xl p-8 text-center max-w-xs w-full">
@@ -101,20 +126,44 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
         <div className="clay-card rounded-3xl p-8 text-center max-w-md w-full">
           <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-          <h3 className="font-black text-slate-900 text-lg">Session Not Found</h3>
-          <p className="text-xs text-slate-500 mt-1 mb-5">{error || 'Unable to load session.'}</p>
-          <button
-            onClick={onBackToHome}
-            className="w-full py-3 clay-btn clay-btn-primary rounded-2xl text-xs font-black"
-          >
-            Return to Home
-          </button>
+          <h3 className="font-black text-slate-900 text-lg">Terminal Connecting</h3>
+          <p className="text-xs text-slate-500 mt-1 mb-5">
+            {error || 'The session is connecting or no active terminal is currently selected.'}
+          </p>
+          <div className="space-y-2.5">
+            <button
+              onClick={handleLaunchEmergencySession}
+              disabled={isAutoCreating}
+              className="w-full py-3 clay-btn clay-btn-primary rounded-2xl text-xs font-black shadow-md cursor-pointer"
+            >
+              {isAutoCreating ? 'Starting Terminal...' : 'Launch Active Terminal Session'}
+            </button>
+            <button
+              onClick={onBackToHome}
+              className="w-full py-3 clay-btn clay-btn-secondary text-slate-700 rounded-2xl text-xs font-bold cursor-pointer"
+            >
+              Return to Home
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const availableCourts = courts.filter((c) => c.status === 'available');
+  // Ensure courts exist seamlessly even if initial snapshot is synchronizing
+  const activeCourtsList: Court[] =
+    courts.length > 0
+      ? courts
+      : Array.from({ length: session?.numberOfCourts || 3 }, (_, i) => ({
+          courtId: `court-${i + 1}`,
+          name: `Court ${i + 1}`,
+          status: 'available' as const,
+          currentMatchId: null,
+          available: true,
+          order: i + 1,
+        }));
+
+  const availableCourts = activeCourtsList.filter((c) => c.status === 'available');
   const sessionUrl = `${window.location.origin}/join/${session.id}`;
 
   const handleToggleQueueSelect = (pId: string) => {
@@ -368,13 +417,15 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
         {(mobileSection === 'all' || mobileSection === 'next') && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div className="lg:col-span-2">
-              <NextGroupCard
-                proposal={nextProposal}
-                availableCourts={availableCourts}
-                onStartOnCourt={handleStartMatch}
-                onAnnounceNextUp={handleAnnounceNextUp}
-                onOpenManualBuilder={() => setShowManualMatchModal(true)}
-              />
+              <ErrorBoundary fallbackTitle="Next Up On Deck">
+                <NextGroupCard
+                  proposal={nextProposal}
+                  availableCourts={availableCourts}
+                  onStartOnCourt={handleStartMatch}
+                  onAnnounceNextUp={handleAnnounceNextUp}
+                  onOpenManualBuilder={() => setShowManualMatchModal(true)}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Quick Roster Actions Card */}
@@ -431,65 +482,71 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
               <div className="flex items-center gap-2.5">
                 <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">Active Courts</h2>
                 <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-xl font-mono font-black clay-pill">
-                  {courts.length}
+                  {activeCourtsList.length}
                 </span>
               </div>
               <span className="text-xs text-slate-500 font-medium hidden sm:inline">Live court assignment</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {courts.map((court) => {
-                const currentMatch =
-                  activeMatches.find((m) => m.matchId === court.currentMatchId || m.courtId === court.courtId) ||
-                  matches.find((m) => m.matchId === court.currentMatchId || (m.courtId === court.courtId && m.status === 'playing'));
-                return (
-                  <CourtCard
-                    key={court.courtId}
-                    court={court}
-                    currentMatch={currentMatch}
-                    participants={participants}
-                    onEndMatch={(c, m) => setActiveEndingCourt({ court: c, match: m })}
-                    onAnnounceCourt={handleAnnounceCourt}
-                    onAssignNextGroup={(c) => {
-                      if (nextProposal) {
-                        handleStartMatch(c, nextProposal);
-                      } else {
-                        setShowManualMatchModal(true);
-                      }
-                    }}
-                    onSetMaintenance={handleSetCourtMaintenance}
-                    onResetCourt={handleResetCourt}
-                  />
-                );
-              })}
-            </div>
+            <ErrorBoundary fallbackTitle="Active Courts">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {activeCourtsList.map((court) => {
+                  const currentMatch =
+                    activeMatches.find((m) => m.matchId === court.currentMatchId || m.courtId === court.courtId) ||
+                    matches.find((m) => m.matchId === court.currentMatchId || (m.courtId === court.courtId && m.status === 'playing'));
+                  return (
+                    <CourtCard
+                      key={court.courtId}
+                      court={court}
+                      currentMatch={currentMatch}
+                      participants={participants}
+                      onEndMatch={(c, m) => setActiveEndingCourt({ court: c, match: m })}
+                      onAnnounceCourt={handleAnnounceCourt}
+                      onAssignNextGroup={(c) => {
+                        if (nextProposal) {
+                          handleStartMatch(c, nextProposal);
+                        } else {
+                          setShowManualMatchModal(true);
+                        }
+                      }}
+                      onSetMaintenance={handleSetCourtMaintenance}
+                      onResetCourt={handleResetCourt}
+                    />
+                  );
+                })}
+              </div>
+            </ErrorBoundary>
           </div>
         )}
 
         {/* Live Leaderboard Section */}
         {(mobileSection === 'all' || mobileSection === 'leaderboard') && (
-          <div>
-            <LiveLeaderboard
-              participants={participants}
-              courts={courts}
-              activeMatches={activeMatches}
-            />
-          </div>
+          <ErrorBoundary fallbackTitle="Live Leaderboard">
+            <div>
+              <LiveLeaderboard
+                participants={participants}
+                courts={courts}
+                activeMatches={activeMatches}
+              />
+            </div>
+          </ErrorBoundary>
         )}
 
         {/* Waiting Queue & Roster Table */}
         {(mobileSection === 'all' || mobileSection === 'queue') && (
-          <div>
-            <QueueTable
-              participants={participants}
-              selectedIds={selectedQueueIds}
-              onToggleSelect={handleToggleQueueSelect}
-              onToggleRest={handleToggleRest}
-              onRemove={handleRemoveParticipant}
-              onEdit={(p) => {}}
-              isOrganizer={true}
-            />
-          </div>
+          <ErrorBoundary fallbackTitle="Active Roster & Queue Table">
+            <div>
+              <QueueTable
+                participants={participants}
+                selectedIds={selectedQueueIds}
+                onToggleSelect={handleToggleQueueSelect}
+                onToggleRest={handleToggleRest}
+                onRemove={handleRemoveParticipant}
+                onEdit={(p) => {}}
+                isOrganizer={true}
+              />
+            </div>
+          </ErrorBoundary>
         )}
       </main>
 

@@ -8,6 +8,7 @@ import { JoinSession } from './pages/JoinSession';
 import { SessionSummary } from './pages/SessionSummary';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { ProfilePage } from './pages/ProfilePage';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 type AppView = 'landing' | 'organizer' | 'player' | 'join' | 'summary' | 'admin' | 'profile';
 
@@ -31,10 +32,23 @@ function AppRouter() {
         setActiveSessionId(parts[1]);
         setSessionId(parts[1]);
         setView('player');
-      } else if (parts[0] === 'organizer' && parts[1]) {
-        setActiveSessionId(parts[1]);
-        setSessionId(parts[1]);
-        setView('organizer');
+      } else if (parts[0] === 'organizer') {
+        const targetId =
+          parts[1] ||
+          localStorage.getItem('picklequeue_active_session_id') ||
+          localStorage.getItem('picklequeue_participant_session_id');
+        if (targetId) {
+          setActiveSessionId(targetId);
+          setSessionId(targetId);
+          setView('organizer');
+          if (!parts[1]) {
+            window.history.replaceState({}, '', `/organizer/${targetId}`);
+          }
+        } else {
+          setView('landing');
+          setActiveSessionId(null);
+          setSessionId(null);
+        }
       } else if (parts[0] === 'summary' && parts[1]) {
         setActiveSessionId(parts[1]);
         setSessionId(parts[1]);
@@ -174,10 +188,12 @@ function AppRouter() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SessionProvider>
-        <AppRouter />
-      </SessionProvider>
-    </AuthProvider>
+    <ErrorBoundary fallbackTitle="PickleQueue Encountered an Error">
+      <AuthProvider>
+        <SessionProvider>
+          <AppRouter />
+        </SessionProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

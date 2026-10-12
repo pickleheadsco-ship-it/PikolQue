@@ -134,10 +134,10 @@ export const CourtCard: React.FC<CourtCardProps> = ({
                           />
                         ) : (
                           <div className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-[9px] shrink-0">
-                            {p.name.charAt(0).toUpperCase()}
+                            {(p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name}</span>
+                        <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name || 'Player'}</span>
                         <SkillBadge skill={p.skillLevel} />
                       </div>
                       <span className="text-slate-500 text-[11px] font-mono font-semibold">
@@ -174,10 +174,10 @@ export const CourtCard: React.FC<CourtCardProps> = ({
                           />
                         ) : (
                           <div className="w-5 h-5 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-black text-[9px] shrink-0">
-                            {p.name.charAt(0).toUpperCase()}
+                            {(p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name}</span>
+                        <span className="font-bold text-slate-900 truncate max-w-[130px] sm:max-w-[150px]">{p.name || 'Player'}</span>
                         <SkillBadge skill={p.skillLevel} />
                       </div>
                       <span className="text-slate-500 text-[11px] font-mono font-semibold">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Participant, Court, GroupMatchProposal } from '../../types';
 import { SkillBadge } from '../ui/Badge';
-import { buildManualMatchProposal } from '../../services/matching/matchingEngine';
+import { buildManualMatchProposal, getAllDoublesPairingOptions, getPlayerSkillScore } from '../../services/matching/matchingEngine';
 import { X, Shuffle, Play, Users } from 'lucide-react';
 
 interface ManualMatchModalProps {
@@ -48,32 +48,35 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
     .filter(Boolean) as Participant[];
 
   // 3 Doubles Pairing combinations
+  const pairingOptions = selectedPlayers.length === 4
+    ? getAllDoublesPairingOptions(selectedPlayers)
+    : [];
+
   const p0 = selectedPlayers[0];
   const p1 = selectedPlayers[1];
   const p2 = selectedPlayers[2];
   const p3 = selectedPlayers[3];
 
-  const combos = selectedPlayers.length === 4 ? [
-    { label: 'Pairing Option 1', teamA: [p0, p1], teamB: [p2, p3] },
-    { label: 'Pairing Option 2', teamA: [p0, p2], teamB: [p1, p3] },
-    { label: 'Pairing Option 3', teamA: [p0, p3], teamB: [p1, p2] },
-  ] : [];
+  const activeA: [Participant, Participant] = (customTeamA && customTeamA.length === 2
+    ? customTeamA
+    : pairingOptions[pairingComboIndex]?.teamA || (selectedPlayers.length === 4 ? [p0, p1] : [])) as [Participant, Participant];
 
-  const activeA = customTeamA || (combos[pairingComboIndex]?.teamA || (selectedPlayers.length === 4 ? [p0, p1] : []));
-  const activeB = customTeamB || (combos[pairingComboIndex]?.teamB || (selectedPlayers.length === 4 ? [p2, p3] : []));
+  const activeB: [Participant, Participant] = (customTeamB && customTeamB.length === 2
+    ? customTeamB
+    : pairingOptions[pairingComboIndex]?.teamB || (selectedPlayers.length === 4 ? [p2, p3] : [])) as [Participant, Participant];
 
-  const scoreA = (activeA[0] ? (activeA[0].skillLevel === 'advanced' ? 3 : activeA[0].skillLevel === 'intermediate' ? 2 : 1) : 0) +
-                 (activeA[1] ? (activeA[1].skillLevel === 'advanced' ? 3 : activeA[1].skillLevel === 'intermediate' ? 2 : 1) : 0);
-  const scoreB = (activeB[0] ? (activeB[0].skillLevel === 'advanced' ? 3 : activeB[0].skillLevel === 'intermediate' ? 2 : 1) : 0) +
-                 (activeB[1] ? (activeB[1].skillLevel === 'advanced' ? 3 : activeB[1].skillLevel === 'intermediate' ? 2 : 1) : 0);
+  const scoreA = getPlayerSkillScore(activeA[0]) + getPlayerSkillScore(activeA[1]);
+  const scoreB = getPlayerSkillScore(activeB[0]) + getPlayerSkillScore(activeB[1]);
   const delta = Math.abs(scoreA - scoreB);
 
-  const proposal: GroupMatchProposal | null = selectedPlayers.length === 4 ? {
-    players: selectedPlayers,
+  const proposal: GroupMatchProposal | null = selectedPlayers.length === 4 && activeA.length === 2 && activeB.length === 2 ? {
+    players: [activeA[0], activeA[1], activeB[0], activeB[1]],
     teamA: activeA,
     teamB: activeB,
     skillDelta: delta,
-    reasoning: customTeamA ? `Custom pairing. Skill delta: ${delta}.` : `Pairing ${pairingComboIndex + 1} of 3 (Skill delta: ${delta}).`,
+    reasoning: customTeamA
+      ? `Custom organizer pairing (Skill Δ: ${delta}).`
+      : (pairingOptions[pairingComboIndex]?.name || `Pairing Option ${pairingComboIndex + 1}`),
   } : null;
 
   const targetCourt = availableCourts.find((c) => c.courtId === selectedCourtId) || availableCourts[0];
@@ -82,10 +85,11 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
     setCustomTeamA(null);
     setCustomTeamB(null);
     setSelectedSwapId(null);
-    setPairingComboIndex((prev) => (prev + 1) % 3);
+    setPairingComboIndex((prev) => (prev + 1) % Math.max(1, pairingOptions.length || 3));
   };
 
   const handleSwapPlayerClick = (p: Participant) => {
+    if (!p?.participantId) return;
     if (!selectedSwapId) {
       setSelectedSwapId(p.participantId);
       return;
@@ -95,15 +99,19 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
       return;
     }
 
-    const nextA = [...activeA];
-    const nextB = [...activeB];
-    const inA1 = nextA.findIndex((item) => item.participantId === selectedSwapId);
-    const inA2 = nextA.findIndex((item) => item.participantId === p.participantId);
-    const inB1 = nextB.findIndex((item) => item.participantId === selectedSwapId);
-    const inB2 = nextB.findIndex((item) => item.participantId === p.participantId);
+    const nextA: [Participant, Participant] = [...activeA];
+    const nextB: [Participant, Participant] = [...activeB];
+    const inA1 = nextA.findIndex((item) => item?.participantId === selectedSwapId);
+    const inA2 = nextA.findIndex((item) => item?.participantId === p.participantId);
+    const inB1 = nextB.findIndex((item) => item?.participantId === selectedSwapId);
+    const inB2 = nextB.findIndex((item) => item?.participantId === p.participantId);
 
-    const first = selectedPlayers.find((item) => item.participantId === selectedSwapId)!;
+    const first = [...nextA, ...nextB].find((item) => item?.participantId === selectedSwapId);
     const second = p;
+    if (!first) {
+      setSelectedSwapId(null);
+      return;
+    }
 
     if (inA1 !== -1 && inB2 !== -1) {
       nextA[inA1] = second;
@@ -111,6 +119,12 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
     } else if (inB1 !== -1 && inA2 !== -1) {
       nextB[inB1] = second;
       nextA[inA2] = first;
+    } else if (inA1 !== -1 && inA2 !== -1) {
+      nextA[inA1] = second;
+      nextA[inA2] = first;
+    } else if (inB1 !== -1 && inB2 !== -1) {
+      nextB[inB1] = second;
+      nextB[inB2] = first;
     }
 
     setCustomTeamA(nextA);
@@ -221,6 +235,7 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
                 <div className="space-y-1">
                   {proposal.teamA.map((p) => {
                     const isSelected = selectedSwapId === p.participantId;
+                    const skillInitial = (p.skillLevel || 'intermediate')[0].toUpperCase();
                     return (
                       <div
                         key={p.participantId}
@@ -230,7 +245,7 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
                         }`}
                         title="Click to swap partner"
                       >
-                        {p.name} ({p.skillLevel[0].toUpperCase()})
+                        {p.name || 'Player'} ({skillInitial})
                       </div>
                     );
                   })}
@@ -241,6 +256,7 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
                 <div className="space-y-1">
                   {proposal.teamB.map((p) => {
                     const isSelected = selectedSwapId === p.participantId;
+                    const skillInitial = (p.skillLevel || 'intermediate')[0].toUpperCase();
                     return (
                       <div
                         key={p.participantId}
@@ -250,7 +266,7 @@ export const ManualMatchModal: React.FC<ManualMatchModalProps> = ({
                         }`}
                         title="Click to swap partner"
                       >
-                        {p.name} ({p.skillLevel[0].toUpperCase()})
+                        {p.name || 'Player'} ({skillInitial})
                       </div>
                     );
                   })}

@@ -14,6 +14,7 @@ import {
   Court,
   Match,
   GroupMatchProposal,
+  SkillLevel,
 } from '../types';
 import {
   getNextGroup,
@@ -111,6 +112,10 @@ export const SessionProvider: React.FC<{
       return;
     }
 
+    if (sessionId) {
+      localStorage.setItem('picklequeue_active_session_id', sessionId);
+    }
+
     // Attempt instantaneous load from cached session data
     const local = getCachedSession(sessionId);
     if (local) {
@@ -123,10 +128,16 @@ export const SessionProvider: React.FC<{
     setError(null);
 
     // 1. Session Document Listener
+    let notFoundTimer: ReturnType<typeof setTimeout> | null = null;
     const sessionDocRef = doc(db, 'sessions', sessionId);
     const unsubSession = onSnapshot(
       sessionDocRef,
       (snap) => {
+        if (notFoundTimer) {
+          clearTimeout(notFoundTimer);
+          notFoundTimer = null;
+        }
+
         if (snap.exists()) {
           const fresh = { id: snap.id, ...snap.data() } as Session;
           setSession(fresh);
@@ -134,17 +145,21 @@ export const SessionProvider: React.FC<{
           // Keep local cache fresh
           const existing = getCachedSession(sessionId);
           cacheSessionLocally(fresh, existing?.courts || []);
+          setLoading(false);
         } else {
-          // If Firestore doesn't have it, keep cached or show message
+          // If Firestore doesn't have it yet, check cached fallback
           const fallback = getCachedSession(sessionId);
           if (fallback) {
             setSession(fallback.session);
+            setLoading(false);
           } else {
-            setSession(null);
-            setError('Session not found or has been removed.');
+            // Keep loading for up to 3.5 seconds to allow Firestore creation/sync to complete
+            notFoundTimer = setTimeout(() => {
+              setLoading(false);
+              setError('Session terminal connection timed out.');
+            }, 3500);
           }
         }
-        setLoading(false);
       },
       (err) => {
         console.warn('Session onSnapshot warning:', err);
@@ -189,13 +204,39 @@ export const SessionProvider: React.FC<{
       }
     );
 
-    // 3. Participants Collection Listener
+    // 3. Participants Collection Listener with Defensive Normalization
     const participantsRef = collection(db, `sessions/${sessionId}/participants`);
     const unsubParticipants = onSnapshot(
       participantsRef,
       (snap) => {
         const list: Participant[] = [];
-        snap.forEach((d) => list.push({ participantId: d.id, ...d.data() } as Participant));
+        snap.forEach((d) => {
+          const data = d.data() || {};
+          const cleanName = String(data.name || `${data.firstName || ''} ${data.surname || ''}`.trim() || 'Player').trim();
+          list.push({
+            ...data,
+            participantId: d.id,
+            sessionId,
+            name: cleanName,
+            firstName: String(data.firstName || cleanName.split(' ')[0] || 'Player').trim(),
+            surname: String(data.surname || cleanName.split(' ').slice(1).join(' ') || '').trim(),
+            skillLevel: (['beginner', 'intermediate', 'advanced'].includes(data.skillLevel) ? data.skillLevel : 'intermediate') as SkillLevel,
+            status: data.status || 'waiting',
+            queuePosition: typeof data.queuePosition === 'number' ? data.queuePosition : 9999,
+            resting: Boolean(data.resting),
+            checkedIn: data.checkedIn !== false,
+            gamesPlayed: typeof data.gamesPlayed === 'number' ? data.gamesPlayed : 0,
+            wins: typeof data.wins === 'number' ? data.wins : 0,
+            losses: typeof data.losses === 'number' ? data.losses : 0,
+            winRate: typeof data.winRate === 'number' ? data.winRate : 0,
+            pointsScored: typeof data.pointsScored === 'number' ? data.pointsScored : 0,
+            pointsConceded: typeof data.pointsConceded === 'number' ? data.pointsConceded : 0,
+            pointDifferential: typeof data.pointDifferential === 'number' ? data.pointDifferential : 0,
+            streak: typeof data.streak === 'number' ? data.streak : 0,
+            previousPartnerIds: Array.isArray(data.previousPartnerIds) ? data.previousPartnerIds : [],
+            previousOpponentIds: Array.isArray(data.previousOpponentIds) ? data.previousOpponentIds : [],
+          } as Participant);
+        });
         setParticipants(list);
       },
       (err) => {
@@ -218,6 +259,7 @@ export const SessionProvider: React.FC<{
     );
 
     return () => {
+      if (notFoundTimer) clearTimeout(notFoundTimer);
       unsubSession();
       unsubCourts();
       unsubParticipants();
@@ -227,25 +269,47 @@ export const SessionProvider: React.FC<{
 
   // Derived Waiting Queue (Sorted by queue position)
   const waitingQueue = useMemo(() => {
-    return getEligibleWaitingPlayers(participants);
+    try {
+      return getEligibleWaitingPlayers(participants);
+    } catch (e) {
+      console.warn('Error computing waiting queue:', e);
+      return (participants || []).filter((p) => p && p.status === 'waiting' && !p.resting);
+    }
   }, [participants]);
 
   const playingParticipants = useMemo(() => {
-    return participants.filter((p) => p.status === 'playing');
+    try {
+      return participants.filter((p) => p.status === 'playing');
+    } catch {
+      return [];
+    }
   }, [participants]);
 
   const restingParticipants = useMemo(() => {
-    return participants.filter((p) => p.resting || p.status === 'resting');
+    try {
+      return participants.filter((p) => p.resting || p.status === 'resting');
+    } catch {
+      return [];
+    }
   }, [participants]);
 
   const activeMatches = useMemo(() => {
-    return matches.filter((m) => m.status === 'playing' || m.status === 'ready');
+    try {
+      return matches.filter((m) => m.status === 'playing' || m.status === 'ready');
+    } catch {
+      return [];
+    }
   }, [matches]);
 
   // Compute Next Group Proposal automatically based on active session matching mode
   const nextProposal = useMemo(() => {
-    if (!session) return null;
-    return getNextGroup(participants, session.matchingMode);
+    try {
+      if (!session) return null;
+      return getNextGroup(participants, session.matchingMode);
+    } catch (err) {
+      console.warn('Error calculating nextProposal in SessionContext:', err);
+      return null;
+    }
   }, [participants, session]);
 
   // Find Current Local Participant

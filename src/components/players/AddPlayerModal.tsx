@@ -58,12 +58,18 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
 
   const handleSubmitBulk = async (e: React.FormEvent) => {
     e.preventDefault();
-    const names = bulkText
-      .split('\n')
+    // Split by newlines if multi-line, otherwise commas/semicolons
+    const rawItems = bulkText.includes('\n')
+      ? bulkText.split(/[\r\n]+/)
+      : bulkText.split(/[,;]+/);
+    const names = rawItems
       .map((n) => n.trim())
       .filter((n) => n.length > 0);
 
-    if (names.length === 0) return;
+    if (names.length === 0) {
+      setError('Please paste or type at least one player name.');
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
     try {
@@ -72,7 +78,8 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to bulk import players.');
+      console.error('Bulk import error:', err);
+      setError(err?.message || 'Failed to bulk import players. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -204,19 +211,29 @@ export const AddPlayerModal: React.FC<AddPlayerModalProps> = ({
         ) : (
           <form onSubmit={handleSubmitBulk} className="mt-4 space-y-4">
             <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
-                Paste Player Names (One per line)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                  Paste Player Names
+                </label>
+                {bulkText.trim().length > 0 && (
+                  <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg clay-pill">
+                    {bulkText.split(/[\r\n,;]+/).map((n) => n.trim()).filter(Boolean).length} Players Detected
+                  </span>
+                )}
+              </div>
               <div className="clay-inset rounded-2xl p-2.5">
                 <textarea
                   rows={5}
                   required
-                  placeholder="Alex&#10;Ben&#10;Carla&#10;David&#10;Emma"
+                  placeholder="Alex Henderson&#10;Ben Smith (Advanced)&#10;Carla Davis&#10;David Lee - Beginner"
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
                   className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
                 />
               </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                Tip: Paste one per line or separated by commas. Numbered lists (1. Alex) are automatically parsed.
+              </p>
             </div>
 
             <div>

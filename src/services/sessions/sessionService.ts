@@ -683,51 +683,131 @@ export async function endSession(sessionId: string): Promise<void> {
 
 export async function bulkImportParticipants(
   sessionId: string,
-  names: string[],
+  rawLines: string[],
   defaultSkill: SkillLevel = 'intermediate'
 ): Promise<number> {
-  const batch = writeBatch(db);
   const participantsRef = collection(db, `sessions/${sessionId}/participants`);
 
-  const currentSnap = await getDocs(participantsRef);
   let maxPos = 0;
-  currentSnap.forEach((d) => {
-    const pos = d.data().queuePosition || 0;
-    if (pos > maxPos) maxPos = pos;
-  });
-
-  let count = 0;
-  for (const rawName of names) {
-    const name = rawName.trim();
-    if (!name) continue;
-
-    const pDoc = doc(participantsRef);
-    const p: Participant = {
-      participantId: pDoc.id,
-      sessionId,
-      name,
-      skillLevel: defaultSkill,
-      status: 'waiting',
-      queuePosition: maxPos + count + 1,
-      queueEnteredAt: serverTimestamp(),
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0,
-      winRate: 0,
-      resting: false,
-      checkedIn: true,
-      joinedAt: serverTimestamp(),
-      previousPartnerIds: [],
-      previousOpponentIds: [],
-    };
-    batch.set(pDoc, p);
-    count++;
+  try {
+    const currentSnap = await getDocs(participantsRef);
+    currentSnap.forEach((d) => {
+      const pos = d.data().queuePosition || 0;
+      if (pos > maxPos) maxPos = pos;
+    });
+  } catch (err) {
+    console.warn('Could not read existing max queue position, defaulting to 0:', err);
   }
 
-  if (count > 0) {
-    await batch.commit();
+  // Parse and sanitize raw lines (split multi-item strings by newlines, commas, semicolons)
+  const expandedLines: string[] = [];
+  for (const raw of rawLines) {
+    if (!raw || typeof raw !== 'string') continue;
+    // If line contains multiple items separated by commas or semicolons (and not just an annotation like "Davis, intermediate")
+    if (raw.includes('\n')) {
+      expandedLines.push(...raw.split('\n'));
+    } else if (raw.includes(';') || (raw.includes(',') && !raw.match(/,\s*(beginner|intermediate|advanced|beg|int|adv)\b/i))) {
+      expandedLines.push(...raw.split(/[,;]+/));
+    } else {
+      expandedLines.push(raw);
+    }
   }
-  return count;
+
+  const parsedPlayers: Array<{
+    fullName: string;
+    firstName: string;
+    surname: string;
+    skill: SkillLevel;
+  }> = [];
+
+  for (const raw of expandedLines) {
+    if (!raw || typeof raw !== 'string') continue;
+    // Strip leading numbering or bullet points like "1. ", "2) ", "- ", "• "
+    let clean = raw.trim().replace(/^[\d]+[\.\)\-\s]+/, '').replace(/^[\-\*•\+]\s+/, '').trim();
+    if (!clean) continue;
+
+    // Detect inline skill annotation if present: e.g. "Alex (Advanced)", "Ben - Beginner", "Carla, intermediate"
+    let playerSkill = defaultSkill;
+    const lower = clean.toLowerCase();
+    if (lower.includes('advanced') || lower.includes('(adv)')) {
+      playerSkill = 'advanced';
+      clean = clean.replace(/\(?\[?\b(advanced|adv)\b\)?\]?/i, '').replace(/[\-–,]\s*$/, '').trim();
+    } else if (lower.includes('beginner') || lower.includes('(beg)')) {
+      playerSkill = 'beginner';
+      clean = clean.replace(/\(?\[?\b(beginner|beg)\b\)?\]?/i, '').replace(/[\-–,]\s*$/, '').trim();
+    } else if (lower.includes('intermediate') || lower.includes('(int)')) {
+      playerSkill = 'intermediate';
+      clean = clean.replace(/\(?\[?\b(intermediate|int)\b\)?\]?/i, '').replace(/[\-–,]\s*$/, '').trim();
+    }
+
+    clean = clean.replace(/[,\(\)\[\]\-]+$/, '').trim();
+    if (!clean) continue;
+
+    // Split first and surname
+    const parts = clean.split(/\s+/).filter(Boolean);
+    const firstName = parts[0] || 'Player';
+    const surname = parts.slice(1).join(' ');
+    const fullName = surname ? `${firstName} ${surname}` : firstName;
+
+    parsedPlayers.push({
+      fullName,
+      firstName,
+      surname,
+      skill: playerSkill,
+    });
+  }
+
+  if (parsedPlayers.length === 0) return 0;
+
+  // Chunk batches by 400 to prevent exceeding Firestore 500 operations batch limit
+  const CHUNK_SIZE = 400;
+  let totalCommitted = 0;
+
+  try {
+    for (let i = 0; i < parsedPlayers.length; i += CHUNK_SIZE) {
+      const chunk = parsedPlayers.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+
+      chunk.forEach((p, idx) => {
+        const pDoc = doc(participantsRef);
+        const queuePos = maxPos + totalCommitted + idx + 1;
+        const participantData: Participant = {
+          participantId: pDoc.id,
+          sessionId,
+          name: p.fullName,
+          firstName: p.firstName,
+          surname: p.surname,
+          skillLevel: p.skill,
+          status: 'waiting',
+          queuePosition: queuePos,
+          queueEnteredAt: serverTimestamp(),
+          gamesPlayed: 0,
+          wins: 0,
+          losses: 0,
+          winRate: 0,
+          pointsScored: 0,
+          pointsConceded: 0,
+          pointDifferential: 0,
+          streak: 0,
+          resting: false,
+          checkedIn: true,
+          joinedAt: serverTimestamp(),
+          previousPartnerIds: [],
+          previousOpponentIds: [],
+        };
+        batch.set(pDoc, participantData);
+      });
+
+      await batch.commit();
+      totalCommitted += chunk.length;
+    }
+
+    return totalCommitted;
+  } catch (error) {
+    console.warn('Bulk import batch write warning:', error);
+    if (totalCommitted > 0) return totalCommitted;
+    handleFirestoreError(error, OperationType.WRITE, `sessions/${sessionId}/participants`);
+  }
 }
 
 export async function updateParticipantAvatar(

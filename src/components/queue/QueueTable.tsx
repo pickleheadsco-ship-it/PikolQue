@@ -26,10 +26,10 @@ export const QueueTable: React.FC<QueueTableProps> = ({
 }) => {
   const [filter, setFilter] = useState<'all' | 'waiting' | 'resting' | 'playing'>('all');
 
-  const filtered = participants.filter((p) => {
-    if (p.status === 'left') return false;
+  const filtered = (participants || []).filter((p) => {
+    if (!p || p.status === 'left') return false;
     if (filter === 'waiting') return p.status === 'waiting' && !p.resting;
-    if (filter === 'resting') return p.resting || p.status === 'resting';
+    if (filter === 'resting') return Boolean(p.resting || p.status === 'resting');
     if (filter === 'playing') return p.status === 'playing';
     return true;
   });
@@ -41,7 +41,7 @@ export const QueueTable: React.FC<QueueTableProps> = ({
         <div className="flex items-center gap-2.5">
           <h3 className="font-black text-slate-900 text-sm sm:text-base tracking-tight">Active Roster & Queue</h3>
           <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-xl font-mono font-bold clay-pill">
-            {participants.filter((p) => p.status !== 'left').length}
+            {(participants || []).filter((p) => p && p.status !== 'left').length}
           </span>
         </div>
 
@@ -101,15 +101,15 @@ export const QueueTable: React.FC<QueueTableProps> = ({
                     {p.avatarUrl ? (
                       <img
                         src={p.avatarUrl}
-                        alt={p.name}
+                        alt={p.name || 'Player'}
                         className="w-6 h-6 rounded-xl object-cover shrink-0 border border-slate-200 shadow-2xs"
                       />
                     ) : (
                       <div className="w-6 h-6 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shrink-0">
-                        {p.name.charAt(0).toUpperCase()}
+                        {(p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase()}
                       </div>
                     )}
-                    <span className="font-bold text-slate-900 text-sm">{p.name}</span>
+                    <span className="font-bold text-slate-900 text-sm">{p.name || 'Player'}</span>
                   </div>
 
                   <StatusBadge status={p.status} resting={p.resting} />
@@ -216,15 +216,15 @@ export const QueueTable: React.FC<QueueTableProps> = ({
                         {p.avatarUrl ? (
                           <img
                             src={p.avatarUrl}
-                            alt={p.name}
+                            alt={p.name || 'Player'}
                             className="w-6 h-6 rounded-xl object-cover shrink-0 border border-slate-200 shadow-2xs"
                           />
                         ) : (
                           <div className="w-6 h-6 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shrink-0">
-                            {p.name.charAt(0).toUpperCase()}
+                            {(p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="truncate max-w-[150px]">{p.name}</span>
+                        <span className="truncate max-w-[150px]">{p.name || 'Player'}</span>
                         {p.lastMatchResult && (
                           <span
                             className={`text-[9px] px-1.5 py-0.5 rounded-md font-black uppercase ${

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { GroupMatchProposal, Court, Participant } from '../../types';
 import { SkillBadge } from '../ui/Badge';
 import { WaitTimeTracker } from '../ui/WaitTimeTracker';
-import { SKILL_SCORES } from '../../services/matching/matchingEngine';
+import { getPlayerSkillScore, getAllDoublesPairingOptions } from '../../services/matching/matchingEngine';
 import { Users, Play, Volume2, PlusCircle, Sparkles, Shuffle, ArrowLeftRight } from 'lucide-react';
 
 interface NextGroupCardProps {
@@ -26,7 +26,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
   const [selectedSwapId, setSelectedSwapId] = useState<string | null>(null);
 
   // Reset pairing if proposal players change
-  const playerSignature = proposal?.players.map((p) => p.participantId).join(',') || '';
+  const playerSignature = proposal?.players?.map((p) => p?.participantId).filter(Boolean).join(',') || '';
   useEffect(() => {
     setPairingIndex(0);
     setCustomTeamA(null);
@@ -34,7 +34,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
     setSelectedSwapId(null);
   }, [playerSignature]);
 
-  if (!proposal) {
+  if (!proposal || !Array.isArray(proposal.players) || proposal.players.length < 4) {
     return (
       <div className="clay-card rounded-3xl p-5 sm:p-6">
         <div className="flex items-center justify-between mb-2">
@@ -44,7 +44,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
           </div>
           <button
             onClick={onOpenManualBuilder}
-            className="text-xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-xl clay-subcard"
+            className="text-xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1.5 py-1 px-2.5 rounded-xl clay-subcard cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Manual 4</span>
@@ -63,43 +63,51 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
   const p2 = players[2];
   const p3 = players[3];
 
-  // 3 standard doubles pairings for any 4 players:
+  // 3 distinct doubles pairings for any 4 players computed deterministically
   const pairingOptions = useMemo(() => {
-    if (players.length < 4) return [];
-    return [
-      { name: 'Pairing Option 1', teamA: [p0, p1], teamB: [p2, p3] },
-      { name: 'Pairing Option 2', teamA: [p0, p2], teamB: [p1, p3] },
-      { name: 'Pairing Option 3', teamA: [p0, p3], teamB: [p1, p2] },
-    ];
-  }, [p0, p1, p2, p3, players.length]);
+    if (!p0 || !p1 || !p2 || !p3) return [];
+    return getAllDoublesPairingOptions([p0, p1, p2, p3]);
+  }, [p0, p1, p2, p3]);
 
   // Active teams determined by custom swap or active rotation index
-  const activeTeamA = customTeamA || (pairingOptions[pairingIndex]?.teamA || proposal.teamA);
-  const activeTeamB = customTeamB || (pairingOptions[pairingIndex]?.teamB || proposal.teamB);
+  const activeTeamA: [Participant, Participant] =
+    (customTeamA && customTeamA.length === 2
+      ? customTeamA
+      : pairingOptions[pairingIndex]?.teamA ||
+        (proposal.teamA && proposal.teamA.length === 2 ? proposal.teamA : [p0, p1])) as [Participant, Participant];
 
-  // Compute live skill delta
-  const scoreA = (activeTeamA[0] ? SKILL_SCORES[activeTeamA[0].skillLevel] : 0) + (activeTeamA[1] ? SKILL_SCORES[activeTeamA[1].skillLevel] : 0);
-  const scoreB = (activeTeamB[0] ? SKILL_SCORES[activeTeamB[0].skillLevel] : 0) + (activeTeamB[1] ? SKILL_SCORES[activeTeamB[1].skillLevel] : 0);
+  const activeTeamB: [Participant, Participant] =
+    (customTeamB && customTeamB.length === 2
+      ? customTeamB
+      : pairingOptions[pairingIndex]?.teamB ||
+        (proposal.teamB && proposal.teamB.length === 2 ? proposal.teamB : [p2, p3])) as [Participant, Participant];
+
+  // Compute live skill delta safely
+  const scoreA = getPlayerSkillScore(activeTeamA[0]) + getPlayerSkillScore(activeTeamA[1]);
+  const scoreB = getPlayerSkillScore(activeTeamB[0]) + getPlayerSkillScore(activeTeamB[1]);
   const activeSkillDelta = Math.abs(scoreA - scoreB);
 
   const activeProposal: GroupMatchProposal = {
     ...proposal,
+    players: [activeTeamA[0], activeTeamA[1], activeTeamB[0], activeTeamB[1]],
     teamA: activeTeamA,
     teamB: activeTeamB,
     skillDelta: activeSkillDelta,
     reasoning: customTeamA
-      ? `Custom organizer pairing. Skill delta: ${activeSkillDelta}.`
-      : `${pairingOptions[pairingIndex]?.name || 'Auto Pairing'} (Δ ${activeSkillDelta})`,
+      ? `Custom organizer pairing (Skill Δ: ${activeSkillDelta}).`
+      : `${pairingOptions[pairingIndex]?.name || 'Recommended Pairing'}`,
   };
 
   const handleCyclePairing = () => {
     setCustomTeamA(null);
     setCustomTeamB(null);
     setSelectedSwapId(null);
-    setPairingIndex((prev) => (prev + 1) % 3);
+    setPairingIndex((prev) => (prev + 1) % Math.max(1, pairingOptions.length));
   };
 
   const handlePlayerClick = (clickedPlayer: Participant) => {
+    if (!clickedPlayer?.participantId) return;
+
     if (!selectedSwapId) {
       setSelectedSwapId(clickedPlayer.participantId);
       return;
@@ -111,15 +119,19 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
     }
 
     // Swap selected with clicked
-    const currentA = [...activeTeamA];
-    const currentB = [...activeTeamB];
-    const inAIdx1 = currentA.findIndex((p) => p.participantId === selectedSwapId);
-    const inAIdx2 = currentA.findIndex((p) => p.participantId === clickedPlayer.participantId);
-    const inBIdx1 = currentB.findIndex((p) => p.participantId === selectedSwapId);
-    const inBIdx2 = currentB.findIndex((p) => p.participantId === clickedPlayer.participantId);
+    const currentA: [Participant, Participant] = [...activeTeamA];
+    const currentB: [Participant, Participant] = [...activeTeamB];
+    const inAIdx1 = currentA.findIndex((p) => p?.participantId === selectedSwapId);
+    const inAIdx2 = currentA.findIndex((p) => p?.participantId === clickedPlayer.participantId);
+    const inBIdx1 = currentB.findIndex((p) => p?.participantId === selectedSwapId);
+    const inBIdx2 = currentB.findIndex((p) => p?.participantId === clickedPlayer.participantId);
 
-    const pFirst = players.find((p) => p.participantId === selectedSwapId)!;
+    const pFirst = [...currentA, ...currentB].find((p) => p?.participantId === selectedSwapId);
     const pSecond = clickedPlayer;
+    if (!pFirst) {
+      setSelectedSwapId(null);
+      return;
+    }
 
     if (inAIdx1 !== -1 && inBIdx2 !== -1) {
       currentA[inAIdx1] = pSecond;
@@ -127,6 +139,14 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
     } else if (inBIdx1 !== -1 && inAIdx2 !== -1) {
       currentB[inBIdx1] = pSecond;
       currentA[inAIdx2] = pFirst;
+    } else if (inAIdx1 !== -1 && inAIdx2 !== -1) {
+      // Swapping within Team A
+      currentA[inAIdx1] = pSecond;
+      currentA[inAIdx2] = pFirst;
+    } else if (inBIdx1 !== -1 && inBIdx2 !== -1) {
+      // Swapping within Team B
+      currentB[inBIdx1] = pSecond;
+      currentB[inBIdx2] = pFirst;
     }
 
     setCustomTeamA(currentA);
@@ -155,7 +175,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
           <button
             type="button"
             onClick={handleCyclePairing}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors clay-btn border border-slate-700 flex items-center gap-1.5"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors clay-btn border border-slate-700 flex items-center gap-1.5 cursor-pointer"
             title="Cycle between all 3 doubles pairing combinations"
           >
             <Shuffle className="w-3.5 h-3.5 text-amber-400" />
@@ -164,7 +184,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
 
           <button
             onClick={() => onAnnounceNextUp(players)}
-            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors clay-btn border border-slate-700"
+            className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors clay-btn border border-slate-700 cursor-pointer"
             title="Announce next up on speaker"
             aria-label="Announce next up"
           >
@@ -173,7 +193,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
 
           <button
             onClick={onOpenManualBuilder}
-            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors clay-btn border border-slate-700"
+            className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors clay-btn border border-slate-700 cursor-pointer"
           >
             Custom 4
           </button>
@@ -186,10 +206,12 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
           <ArrowLeftRight className="w-3 h-3 text-emerald-400" />
           <span>Click any 2 players to swap pairing partners:</span>
         </span>
-        {selectedSwapId && (
+        {selectedSwapId ? (
           <span className="text-amber-400 font-bold animate-pulse">
             Select 2nd player to swap!
           </span>
+        ) : (
+          <span className="text-slate-500 font-mono text-[10px]">Tap cards to rearrange</span>
         )}
       </div>
 
@@ -203,7 +225,10 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
           </div>
           <div className="space-y-2">
             {activeTeamA.map((p) => {
+              if (!p) return null;
               const isSelected = selectedSwapId === p.participantId;
+              const initial = (p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase();
+
               return (
                 <div
                   key={p.participantId}
@@ -215,7 +240,20 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
                   }`}
                   title="Click to swap partner"
                 >
-                  <span className="font-bold text-slate-100 truncate max-w-[120px]">{p.name}</span>
+                  <div className="flex items-center gap-2 truncate">
+                    {p.avatarUrl ? (
+                      <img
+                        src={p.avatarUrl}
+                        alt={p.name || 'Player'}
+                        className="w-5 h-5 rounded-lg object-cover shrink-0 border border-slate-700"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-lg bg-emerald-950 text-emerald-300 font-black text-[9px] flex items-center justify-center shrink-0">
+                        {initial}
+                      </div>
+                    )}
+                    <span className="font-bold text-slate-100 truncate max-w-[120px]">{p.name || 'Player'}</span>
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <SkillBadge skill={p.skillLevel} />
                     <WaitTimeTracker queueEnteredAt={p.queueEnteredAt} className="text-slate-400" />
@@ -234,7 +272,10 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
           </div>
           <div className="space-y-2">
             {activeTeamB.map((p) => {
+              if (!p) return null;
               const isSelected = selectedSwapId === p.participantId;
+              const initial = (p.name?.trim() || p.firstName?.trim() || '?').charAt(0).toUpperCase();
+
               return (
                 <div
                   key={p.participantId}
@@ -246,7 +287,20 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
                   }`}
                   title="Click to swap partner"
                 >
-                  <span className="font-bold text-slate-100 truncate max-w-[120px]">{p.name}</span>
+                  <div className="flex items-center gap-2 truncate">
+                    {p.avatarUrl ? (
+                      <img
+                        src={p.avatarUrl}
+                        alt={p.name || 'Player'}
+                        className="w-5 h-5 rounded-lg object-cover shrink-0 border border-slate-700"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-lg bg-sky-950 text-sky-300 font-black text-[9px] flex items-center justify-center shrink-0">
+                        {initial}
+                      </div>
+                    )}
+                    <span className="font-bold text-slate-100 truncate max-w-[120px]">{p.name || 'Player'}</span>
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <SkillBadge skill={p.skillLevel} />
                     <WaitTimeTracker queueEnteredAt={p.queueEnteredAt} className="text-slate-400" />
@@ -262,7 +316,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
       <div className="text-[11px] text-slate-300 mb-4 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
         <span className="truncate pr-2 font-medium">{activeProposal.reasoning}</span>
         <span className="text-emerald-400 font-mono text-[10px] font-bold shrink-0">
-          Δ {activeSkillDelta} {activeSkillDelta === 0 ? '(Perfect Balance)' : ''}
+          Δ {activeSkillDelta} {activeSkillDelta === 0 ? '(Balanced)' : ''}
         </span>
       </div>
 
@@ -271,7 +325,7 @@ export const NextGroupCard: React.FC<NextGroupCardProps> = ({
         {firstAvailableCourt ? (
           <button
             onClick={() => onStartOnCourt(firstAvailableCourt, activeProposal)}
-            className="w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg"
+            className="w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-lg cursor-pointer"
           >
             <Play className="w-4 h-4 fill-current" />
             <span>Seat & Start on {firstAvailableCourt.name}</span>
