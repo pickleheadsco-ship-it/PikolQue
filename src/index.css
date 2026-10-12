@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+html, body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+@layer utilities {
+  /* Safe area inset helpers for mobile screens with notches / home bars */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  /* Claymorphism Base Card */
+  .clay-card {
+    background: #ffffff;
+    box-shadow: 
+      8px 10px 20px rgba(160, 175, 195, 0.35),
+      -6px -6px 16px rgba(255, 255, 255, 0.95),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.9),
+      inset -2px -2px 6px rgba(175, 190, 210, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Claymorphism Subcard / Soft Floating Panel */
+  .clay-subcard {
+    background: #f8fafc;
+    box-shadow: 
+      5px 6px 14px rgba(160, 175, 195, 0.25),
+      -4px -4px 10px rgba(255, 255, 255, 0.9),
+      inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.95),
+      inset -1.5px -1.5px 4px rgba(180, 195, 215, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  /* Dark Claymorphism */
+  .clay-card-dark {
+    background: #0f172a;
+    box-shadow: 
+      8px 12px 24px rgba(0, 0, 0, 0.45),
+      -4px -4px 12px rgba(255, 255, 255, 0.04),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.12),
+      inset -2px -2px 6px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Inset Well / Tactile Input / Pressed Counter */
+  .clay-inset {
+    background: #f1f5f9;
+    box-shadow: 
+      inset 3px 3px 6px rgba(160, 175, 195, 0.35),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+  }
+
+  .clay-inset-dark {
+    background: #090d16;
+    box-shadow: 
+      inset 3px 3px 6px rgba(0, 0, 0, 0.6),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Claymorphism Tactile Buttons */
+  .clay-btn {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+  }
+  .clay-btn:active {
+    transform: scale(0.97) translateY(1px);
+  }
+
+  .clay-btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 
+      4px 6px 14px rgba(5, 150, 105, 0.4),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(4, 120, 87, 0.4);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .clay-btn-primary:active {
+    box-shadow: 
+      2px 3px 6px rgba(5, 150, 105, 0.4),
+      inset 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .clay-btn-secondary {
+    background: #ffffff;
+    box-shadow: 
+      4px 6px 12px rgba(160, 175, 195, 0.3),
+      -2px -2px 6px rgba(255, 255, 255, 0.9),
+      inset 1.5px 1.5px 2px rgba(255, 255, 255, 1),
+      inset -1.5px -1.5px 3px rgba(180, 195, 215, 0.25);
+    color: #1e293b;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+  .clay-btn-secondary:active {
+    box-shadow: 
+      inset 2px 2px 4px rgba(160, 175, 195, 0.35),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+  }
+
+  .clay-btn-sky {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    box-shadow: 
+      4px 6px 14px rgba(2, 132, 199, 0.4),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(3, 105, 161, 0.4);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .clay-btn-amber {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 
+      4px 6px 14px rgba(217, 119, 6, 0.4),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(180, 83, 9, 0.4);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .clay-btn-danger {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    box-shadow: 
+      4px 6px 14px rgba(225, 29, 72, 0.4),
+      inset 2px 2px 3px rgba(255, 255, 255, 0.45),
+      inset -2px -2px 4px rgba(159, 18, 57, 0.4);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  /* Clay Badges */
+  .clay-pill {
+    box-shadow: 
+      2px 3px 6px rgba(160, 175, 195, 0.25),
+      -1px -1px 4px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+      inset -1px -1px 2px rgba(180, 195, 215, 0.2);
+  }
+
+  /* 3D Floating Animation */
+  .animate-float {
+    animation: float-drift 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes float-drift {
+    0% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-12px) rotate(2deg);
+    }
+    100% {
+      transform: translateY(4px) rotate(-1.5deg);
+    }
+  }
+}

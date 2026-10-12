@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isBootstrapAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'pickleheadsco@gmail.com') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrapAdmin() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // Admins lookup
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrapAdmin();
+    }
+
+    // Venues
+    match /venues/{venueId} {
+      allow read, write: if true;
+    }
+
+    // Health check & test collection
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Sessions
+    match /sessions/{sessionId} {
+      allow read, write: if true;
+
+      // Participants Subcollection
+      match /participants/{participantId} {
+        allow read, write: if true;
+      }
+
+      // Courts Subcollection
+      match /courts/{courtId} {
+        allow read, write: if true;
+      }
+
+      // Matches Subcollection
+      match /matches/{matchId} {
+        allow read, write: if true;
+      }
+
+      // Audit Logs Subcollection
+      match /audit_logs/{logId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}

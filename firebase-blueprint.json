@@ -1,0 +1,154 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System administrator or venue organizer account profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin", "organizer", "player"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Venue": {
+      "title": "Venue",
+      "description": "Pickleball venue facility hosting open-play sessions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 200 },
+        "timezone": { "type": "string", "maxLength": 50 },
+        "courtsCount": { "type": "number" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "active"]
+    },
+    "Session": {
+      "title": "Session",
+      "description": "An active or archived pickleball open-play session",
+      "type": "object",
+      "properties": {
+        "venueId": { "type": "string", "maxLength": 128 },
+        "venueName": { "type": "string", "maxLength": 100 },
+        "name": { "type": "string", "maxLength": 100 },
+        "sport": { "type": "string", "enum": ["pickleball"] },
+        "status": { "type": "string", "enum": ["draft", "active", "paused", "completed"] },
+        "matchingMode": { "type": "string", "enum": ["balanced", "social_mix", "skill_separated", "winners_losers"] },
+        "numberOfCourts": { "type": "number" },
+        "maxPlayers": { "type": "number" },
+        "joinCode": { "type": "string", "maxLength": 16 },
+        "organizerId": { "type": "string", "maxLength": 128 },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "matchingMode", "numberOfCourts", "joinCode", "organizerId"]
+    },
+    "Participant": {
+      "title": "Participant",
+      "description": "Player checked into a specific session queue",
+      "type": "object",
+      "properties": {
+        "participantId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 60 },
+        "skillLevel": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+        "status": { "type": "string", "enum": ["waiting", "assigned", "playing", "resting", "left"] },
+        "queuePosition": { "type": "number" },
+        "queueEnteredAt": { "type": "string", "format": "date-time" },
+        "lastPlayedAt": { "type": "string", "format": "date-time" },
+        "gamesPlayed": { "type": "number" },
+        "wins": { "type": "number" },
+        "losses": { "type": "number" },
+        "winRate": { "type": "number" },
+        "resting": { "type": "boolean" },
+        "checkedIn": { "type": "boolean" },
+        "joinedAt": { "type": "string", "format": "date-time" },
+        "leftAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participantId", "name", "skillLevel", "status", "queuePosition", "resting", "checkedIn"]
+    },
+    "Court": {
+      "title": "Court",
+      "description": "Physical pickleball court state in a session",
+      "type": "object",
+      "properties": {
+        "courtId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["available", "playing", "maintenance"] },
+        "currentMatchId": { "type": "string", "maxLength": 128 },
+        "available": { "type": "boolean" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status", "available", "order"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Doubles pickleball game assigned to a court",
+      "type": "object",
+      "properties": {
+        "matchId": { "type": "string", "maxLength": 128 },
+        "courtId": { "type": "string", "maxLength": 128 },
+        "courtName": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["waiting", "assigned", "ready", "playing", "completed", "cancelled"] },
+        "matchingMode": { "type": "string", "enum": ["balanced", "social_mix", "skill_separated", "winners_losers", "manual"] },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" },
+        "durationSeconds": { "type": "number" },
+        "winningTeam": { "type": "string", "enum": ["teamA", "teamB"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courtId", "status", "matchingMode"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable operational event record for session actions",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string", "maxLength": 60 },
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 60 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["action", "actorId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and permission levels"
+    },
+    "/venues/{venueId}": {
+      "schema": "Venue",
+      "description": "Venues configured in the system"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Open play sessions"
+    },
+    "/sessions/{sessionId}/participants/{participantId}": {
+      "schema": "Participant",
+      "description": "Player queue and status inside an open-play session"
+    },
+    "/sessions/{sessionId}/courts/{courtId}": {
+      "schema": "Court",
+      "description": "Courts inside an open play session"
+    },
+    "/sessions/{sessionId}/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Matches created and played in the session"
+    },
+    "/sessions/{sessionId}/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Immutable audit events for session management actions"
+    }
+  }
+}
