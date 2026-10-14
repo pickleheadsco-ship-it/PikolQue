@@ -15,8 +15,10 @@ import {
   Search,
 } from 'lucide-react';
 
+import { useSession } from '../../context/SessionContext';
+
 interface LiveLeaderboardProps {
-  participants: Participant[];
+  participants?: Participant[];
   courts?: Court[];
   activeMatches?: Match[];
   highlightParticipantId?: string | null;
@@ -27,13 +29,17 @@ interface LiveLeaderboardProps {
 export type LeaderboardSortOption = 'winRate' | 'wins' | 'gamesPlayed' | 'pointDiff' | 'streak';
 
 export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
-  participants,
-  courts = [],
-  activeMatches = [],
+  participants: propParticipants,
+  courts: propCourts,
+  activeMatches: propActiveMatches,
   highlightParticipantId,
   compact = false,
   showTitle = true,
 }) => {
+  const sessionContext = useSession();
+  const participants = propParticipants || sessionContext.participants || [];
+  const courts = propCourts || sessionContext.courts || [];
+  const activeMatches = propActiveMatches || sessionContext.activeMatches || [];
   const [sortBy, setSortBy] = useState<LeaderboardSortOption>('winRate');
   const [filterStatus, setFilterStatus] = useState<'all' | 'playing' | 'waiting'>('all');
   const [searchQuery, setSearchQuery] = useState('');

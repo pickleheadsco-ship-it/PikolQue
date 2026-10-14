@@ -8,9 +8,12 @@ import { JoinSession } from './pages/JoinSession';
 import { SessionSummary } from './pages/SessionSummary';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { ProfilePage } from './pages/ProfilePage';
+import { ClubMemberManagement } from './components/club/ClubMemberManagement';
+import { LiveLeaderboard } from './components/leaderboard/LiveLeaderboard';
+import { ArrowLeft } from 'lucide-react';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
-type AppView = 'landing' | 'organizer' | 'player' | 'join' | 'summary' | 'admin' | 'profile';
+type AppView = 'landing' | 'organizer' | 'player' | 'join' | 'summary' | 'admin' | 'profile' | 'club' | 'leaderboard';
 
 function AppRouter() {
   const { setSessionId } = useSession();
@@ -57,6 +60,10 @@ function AppRouter() {
         setView('admin');
       } else if (parts[0] === 'profile') {
         setView('profile');
+      } else if (parts[0] === 'club') {
+        setView('club');
+      } else if (parts[0] === 'leaderboard') {
+        setView('leaderboard');
       } else {
         setView('landing');
         setActiveSessionId(null);
@@ -164,11 +171,67 @@ function AppRouter() {
         />
       );
 
+    case 'club':
+      return (
+        <div className="min-h-screen bg-slate-100 text-slate-900 pb-16">
+          <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-slate-800 shadow-sm">
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBackToHome}
+                  className="p-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors clay-btn cursor-pointer"
+                  aria-label="Back to home"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h1 className="font-black text-sm sm:text-base tracking-tight text-white">Club Member Management</h1>
+              </div>
+            </div>
+          </header>
+          <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+            <ClubMemberManagement activeSessionId={activeSessionId} />
+          </main>
+        </div>
+      );
+
+    case 'leaderboard':
+      return (
+        <div className="min-h-screen bg-slate-100 text-slate-900 pb-16">
+          <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-slate-800 shadow-sm">
+            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBackToHome}
+                  className="p-2 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors clay-btn cursor-pointer"
+                  aria-label="Back to home"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h1 className="font-black text-sm sm:text-base tracking-tight text-white">Pickleheads Open Play Standings</h1>
+              </div>
+            </div>
+          </header>
+          <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+            <div className="clay-card rounded-3xl p-4 sm:p-5 shadow-xl">
+              <LiveLeaderboard showTitle={false} />
+            </div>
+          </main>
+        </div>
+      );
+
     case 'admin':
       return (
         <AdminDashboard
           onBackToHome={handleBackToHome}
           onOpenSession={(sId) => handleSelectSession(sId, 'organizer')}
+          onNavigateToView={(targetView, sId) => {
+            if (sId) {
+              handleSelectSession(sId, targetView === 'player' ? 'player' : 'organizer');
+            } else {
+              setView(targetView as AppView);
+              window.history.pushState({}, '', targetView === 'landing' ? '/' : `/${targetView}`);
+            }
+          }}
         />
       );
 
@@ -180,6 +243,14 @@ function AppRouter() {
           onOpenAdmin={() => {
             setView('admin');
             window.history.pushState({}, '', '/admin');
+          }}
+          onNavigateToView={(targetView, sId) => {
+            if (sId) {
+              handleSelectSession(sId, targetView === 'player' ? 'player' : 'organizer');
+            } else {
+              setView(targetView as AppView);
+              window.history.pushState({}, '', targetView === 'landing' ? '/' : `/${targetView}`);
+            }
           }}
         />
       );

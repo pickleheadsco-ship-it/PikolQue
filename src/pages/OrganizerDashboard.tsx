@@ -48,16 +48,20 @@ import {
   ListOrdered,
   Lock,
   Clock,
+  Compass,
 } from 'lucide-react';
+import { AppNavigatorModal } from '../components/navigation/AppNavigatorModal';
 
 interface OrganizerDashboardProps {
   onBackToHome: () => void;
   onViewSummary: () => void;
+  onNavigateToView?: (view: string, sessionId?: string) => void;
 }
 
 export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   onBackToHome,
   onViewSummary,
+  onNavigateToView,
 }) => {
   const {
     sessionId,
@@ -89,6 +93,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showNavigatorModal, setShowNavigatorModal] = useState(false);
   const [isAutoCreating, setIsAutoCreating] = useState(false);
 
   // Result Modal State
@@ -397,6 +402,16 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2.5 pointer-events-none" />
             </div>
+
+            <button
+              onClick={() => setShowNavigatorModal(true)}
+              className="px-3 py-2 rounded-2xl clay-btn clay-btn-secondary text-purple-700 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer"
+              title="System Navigator"
+              aria-label="Navigator"
+            >
+              <Compass className="w-4 h-4 text-purple-600" />
+              <span className="hidden sm:inline">Navigator</span>
+            </button>
 
             <button
               onClick={() => setShowLeaderboardModal(true)}
@@ -778,6 +793,26 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
           sessionId={sessionId}
         />
       )}
+
+      {/* System Navigator Modal for QA & Route Testing */}
+      <AppNavigatorModal
+        isOpen={showNavigatorModal}
+        onClose={() => setShowNavigatorModal(false)}
+        onNavigate={(targetView, sId) => {
+          if (onNavigateToView) {
+            onNavigateToView(targetView, sId);
+          } else {
+            if (targetView === 'landing') onBackToHome();
+            else if (targetView === 'profile') setShowProfileModal(true);
+            else if (targetView === 'leaderboard') setShowLeaderboardModal(true);
+            else {
+              window.history.pushState({}, '', targetView === 'landing' ? '/' : `/${targetView}`);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+          }
+        }}
+        activeSessionId={sessionId}
+      />
     </div>
   );
 };
