@@ -19,7 +19,6 @@ import {
   Award,
   Calendar,
   Lock,
-  Compass,
 } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
@@ -28,15 +27,13 @@ import { FloatingClayIcons } from '../components/ui/FloatingClayIcons';
 import { firePickleballBurst } from '../services/fx/pickleballBurst';
 import { OrganizerLoginModal } from '../components/auth/OrganizerLoginModal';
 import { BookDemoModal } from '../components/demo/BookDemoModal';
-import { AppNavigatorModal } from '../components/navigation/AppNavigatorModal';
 
 interface LandingPageProps {
   onSelectSession: (sessionId: string, mode: 'organizer' | 'player') => void;
   onOpenAdmin: () => void;
-  onNavigateToView?: (view: string, sessionId?: string) => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpenAdmin, onNavigateToView }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpenAdmin }) => {
   const { user, isAdmin, isOrganizer, organizerEmail, logout, signInAsAnonymousPlayer } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +45,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showBookDemoModal, setShowBookDemoModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showNavigatorModal, setShowNavigatorModal] = useState(false);
 
   // New Session Creation Form state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -242,14 +238,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                   <Play className="w-3.5 h-3.5" />
                   <span>Terminal</span>
                 </button>
-                <button
-                  onClick={() => setShowNavigatorModal(true)}
-                  className="px-3 py-2 rounded-2xl clay-btn clay-btn-secondary text-purple-700 text-xs font-black flex items-center gap-1.5 shadow-xs hover:border-purple-300 transition-all cursor-pointer"
-                  title="System Navigator"
-                >
-                  <Compass className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Navigator</span>
-                </button>
                 <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-purple-50 text-purple-800 text-xs font-bold clay-subcard">
                   <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                   <span className="truncate max-w-[150px]">{user?.email || organizerEmail || 'Admin'}</span>
@@ -269,14 +257,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
               </div>
             ) : isOrganizer ? (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowNavigatorModal(true)}
-                  className="px-3 py-2 rounded-2xl clay-btn clay-btn-secondary text-purple-700 text-xs font-black flex items-center gap-1.5 shadow-xs hover:border-purple-300 transition-all cursor-pointer"
-                  title="System Navigator"
-                >
-                  <Compass className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Navigator</span>
-                </button>
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-bold clay-subcard">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="hidden sm:inline">Organizer:</span>
@@ -311,14 +291,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowNavigatorModal(true)}
-                  className="px-3 py-2 rounded-2xl clay-btn clay-btn-secondary text-purple-700 text-xs font-black flex items-center gap-1.5 shadow-xs hover:border-purple-300 transition-all cursor-pointer"
-                  title="System Navigator"
-                >
-                  <Compass className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Navigator</span>
-                </button>
                 <button
                   onClick={() => setShowBookDemoModal(true)}
                   className="px-4 py-2 rounded-2xl clay-btn clay-btn-primary text-white text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
@@ -377,36 +349,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
             smart matching algorithms.
           </p>
 
-          {/* Primary Landing Page CTA: Book a Demo */}
-          {!isAdmin && !isOrganizer && (
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => setShowBookDemoModal(true)}
-                className="clay-btn clay-btn-primary px-8 py-3.5 rounded-2xl text-sm font-black text-white shadow-xl flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 transition-all ring-2 ring-emerald-300"
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Book a Demo</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="clay-btn clay-btn-secondary px-5 py-3.5 rounded-2xl text-sm font-bold text-slate-800 shadow-xs flex items-center gap-2 cursor-pointer hover:border-emerald-300 transition-colors"
-              >
-                <Lock className="w-4 h-4 text-emerald-600" />
-                <span>Admin Login</span>
-              </button>
-            </div>
-          )}
-
           {/* Quick Join By Code Bar */}
           <div className="mt-6 sm:mt-8 max-w-md mx-auto">
-            {!isAdmin && !isOrganizer && (
-              <div className="text-center mb-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                  Already at a club? Join active queue
-                </span>
-              </div>
-            )}
             <div className="clay-card rounded-3xl p-2.5">
               <form onSubmit={handleJoinByCode} className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 clay-inset rounded-2xl px-4 py-2.5 flex items-center">
@@ -830,27 +774,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
           onClose={() => setShowProfileModal(false)}
         />
       )}
-
-      {/* System Navigator Modal for QA & Route Testing */}
-      <AppNavigatorModal
-        isOpen={showNavigatorModal}
-        onClose={() => setShowNavigatorModal(false)}
-        onNavigate={(targetView, sId) => {
-          if (onNavigateToView) {
-            onNavigateToView(targetView, sId);
-          } else {
-            if (targetView === 'admin') onOpenAdmin();
-            else if (targetView === 'profile') setShowProfileModal(true);
-            else if (sId) onSelectSession(sId, targetView === 'player' ? 'player' : 'organizer');
-            else {
-              window.history.pushState({}, '', targetView === 'landing' ? '/' : `/${targetView}`);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }
-          }
-        }}
-        activeSessionId={sessions.length > 0 ? sessions[0].id : null}
-        sessions={sessions}
-      />
     </div>
   );
 };

@@ -181,7 +181,6 @@ export interface ReclubSyncResult {
   failedCount: number;
   errors: string[];
   syncedAt: string;
-  syncedMembers?: Partial<ClubMember>[];
 }
 
 export interface DemoRequest {

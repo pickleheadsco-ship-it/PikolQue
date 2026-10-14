@@ -37,48 +37,6 @@ export function generateJoinCode(): string {
   return code;
 }
 
-// Audit logging configuration: supports toggle to stop or resume audit logs
-export function isAuditLoggingEnabled(): boolean {
-  try {
-    const val = localStorage.getItem('picklequeue_audit_log_enabled');
-    return val === null ? true : val === 'true';
-  } catch {
-    return true;
-  }
-}
-
-export function setAuditLoggingEnabled(enabled: boolean): void {
-  try {
-    localStorage.setItem('picklequeue_audit_log_enabled', String(enabled));
-  } catch {}
-}
-
-export async function recordAuditLog(
-  sessionId: string,
-  action: string,
-  actorId: string,
-  actorName: string,
-  metadata?: Record<string, any>
-): Promise<void> {
-  if (!isAuditLoggingEnabled()) {
-    return;
-  }
-  try {
-    const auditRef = doc(collection(db, `sessions/${sessionId}/audit_logs`));
-    await setDoc(auditRef, {
-      id: auditRef.id,
-      sessionId,
-      action,
-      actorId,
-      actorName,
-      timestamp: serverTimestamp(),
-      metadata: metadata || {},
-    });
-  } catch (err) {
-    console.warn('Audit log write error:', err);
-  }
-}
-
 export interface CreateSessionParams {
   name: string;
   venueName: string;
@@ -226,19 +184,17 @@ export async function createSession(params: CreateSessionParams): Promise<string
       console.warn('Firestore batch commit deferred or failed:', commitErr);
     }
 
-    // Fire-and-forget audit event so it never blocks session launch (honors audit log setting)
-    if (isAuditLoggingEnabled()) {
-      const auditRef = doc(collection(db, `sessions/${sessionId}/audit_logs`));
-      setDoc(auditRef, {
-        id: auditRef.id,
-        sessionId,
-        action: 'SESSION_STARTED',
-        actorId: params.organizerId,
-        actorName: params.organizerEmail || 'Organizer',
-        timestamp: serverTimestamp(),
-        metadata: { numberOfCourts: params.numberOfCourts, matchingMode: params.matchingMode },
-      }).catch((err) => console.warn('Audit log write error:', err));
-    }
+    // Fire-and-forget audit event so it never blocks session launch
+    const auditRef = doc(collection(db, `sessions/${sessionId}/audit_logs`));
+    setDoc(auditRef, {
+      id: auditRef.id,
+      sessionId,
+      action: 'SESSION_STARTED',
+      actorId: params.organizerId,
+      actorName: params.organizerEmail || 'Organizer',
+      timestamp: serverTimestamp(),
+      metadata: { numberOfCourts: params.numberOfCourts, matchingMode: params.matchingMode },
+    }).catch((err) => console.warn('Audit log write error:', err));
 
     return sessionId;
   } catch (error) {

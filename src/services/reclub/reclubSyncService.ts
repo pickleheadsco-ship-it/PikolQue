@@ -127,44 +127,20 @@ export function parseReclubData(rawInput: string | any): Partial<ClubMember>[] {
 function extractMembersFromParsedJson(json: any): Partial<ClubMember>[] {
   const members: Partial<ClubMember>[] = [];
 
-  // Check if Reclub wrapped in event attendees, group members, roster or plain array
+  // Check if Reclub wrapped in { data: [...] } or { members: [...] } or { club: { members: [...] } }
   let list: any[] = [];
   if (Array.isArray(json)) {
     list = json;
-  } else if (Array.isArray(json.attendees)) {
-    list = json.attendees;
-  } else if (Array.isArray(json.participants)) {
-    list = json.participants;
-  } else if (Array.isArray(json.confirmed)) {
-    list = json.confirmed;
-  } else if (Array.isArray(json.confirmed_attendees)) {
-    list = json.confirmed_attendees;
-  } else if (Array.isArray(json.confirmedPlayers)) {
-    list = json.confirmedPlayers;
   } else if (Array.isArray(json.members)) {
     list = json.members;
   } else if (Array.isArray(json.data)) {
     list = json.data;
-  } else if (json.event && Array.isArray(json.event.attendees)) {
-    list = json.event.attendees;
-  } else if (json.event && Array.isArray(json.event.participants)) {
-    list = json.event.participants;
-  } else if (json.event && Array.isArray(json.event.confirmed)) {
-    list = json.event.confirmed;
-  } else if (json.group && Array.isArray(json.group.members)) {
-    list = json.group.members;
-  } else if (json.group && Array.isArray(json.group.roster)) {
-    list = json.group.roster;
   } else if (json.club && Array.isArray(json.club.members)) {
     list = json.club.members;
   } else if (json.club && Array.isArray(json.club.roster)) {
     list = json.club.roster;
   } else if (Array.isArray(json.players)) {
     list = json.players;
-  } else if (Array.isArray(json.rsvps)) {
-    list = json.rsvps;
-  } else if (Array.isArray(json.registrations)) {
-    list = json.registrations;
   }
 
   for (const item of list) {
@@ -172,13 +148,6 @@ function extractMembersFromParsedJson(json: any): Partial<ClubMember>[] {
 
     // Handle nested Reclub user object: { user: { first_name, last_name, avatar_url, email } }
     const userObj = item.user || item.player || item.profile || item;
-
-    // Skip if explicitly on waitlist, declined, or cancelled for event RSVPs (only confirmed players added)
-    const rawRsvp = String(item.rsvp_status || item.attendance || item.status || userObj.status || '').toLowerCase();
-    if (rawRsvp.includes('waitlist') || rawRsvp.includes('decline') || rawRsvp.includes('cancel') || rawRsvp.includes('not_going')) {
-      continue;
-    }
-
     const firstName = userObj.first_name || userObj.firstName || '';
     const surname = userObj.last_name || userObj.lastName || userObj.surname || '';
     const fullName = userObj.name || userObj.full_name || `${firstName} ${surname}`.trim() || 'Club Member';
@@ -257,27 +226,25 @@ export async function getClubMembers(): Promise<ClubMember[]> {
 export async function deleteClubMember(memberId: string): Promise<boolean> {
   if (!memberId) return false;
 
-  // 1. Immediately clean local cache so UI updates with zero lag
-  try {
-    const cached = localStorage.getItem('picklequeue_club_members');
-    if (cached) {
-      const list: ClubMember[] = JSON.parse(cached);
-      const filtered = list.filter((m) => m.id !== memberId);
-      localStorage.setItem('picklequeue_club_members', JSON.stringify(filtered));
-    }
-  } catch (cacheErr) {
-    console.warn('Error updating local member cache on delete:', cacheErr);
-  }
-
-  // 2. Delete document in Firestore
   try {
     const docRef = doc(db, MEMBERS_COLLECTION, memberId);
     await deleteDoc(docRef);
-  } catch (err) {
-    console.warn('Warning deleting member doc in Firestore (cleaned locally):', err);
-  }
 
-  return true;
+    // Update local cache
+    try {
+      const cached = localStorage.getItem('picklequeue_club_members');
+      if (cached) {
+        const list: ClubMember[] = JSON.parse(cached);
+        const filtered = list.filter((m) => m.id !== memberId);
+        localStorage.setItem('picklequeue_club_members', JSON.stringify(filtered));
+      }
+    } catch {}
+
+    return true;
+  } catch (err) {
+    console.error('Failed to delete member from Firestore:', err);
+    throw err;
+  }
 }
 
 /**
@@ -285,6 +252,8 @@ export async function deleteClubMember(memberId: string): Promise<boolean> {
  */
 export async function saveClubMember(member: Partial<ClubMember> & { name: string }): Promise<ClubMember> {
   const memberId = member.id || `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const docRef = doc(db, MEMBERS_COLLECTION, memberId);
+
   const cleanName = member.name.trim();
   const nameParts = cleanName.split(/\s+/);
 
@@ -309,28 +278,8 @@ export async function saveClubMember(member: Partial<ClubMember> & { name: strin
     createdAt: member.createdAt || serverTimestamp(),
   };
 
-  // Keep local cache synced
-  try {
-    const cached = localStorage.getItem('picklequeue_club_members');
-    const list: ClubMember[] = cached ? JSON.parse(cached) : [];
-    const existingIndex = list.findIndex((m) => m.id === memberId);
-    if (existingIndex >= 0) {
-      list[existingIndex] = { ...list[existingIndex], ...memberData };
-    } else {
-      list.unshift(memberData);
-    }
-    localStorage.setItem('picklequeue_club_members', JSON.stringify(list));
-  } catch (cacheErr) {
-    console.warn('Error caching saved member locally:', cacheErr);
-  }
-
-  try {
-    const docRef = doc(db, MEMBERS_COLLECTION, memberId);
-    const sanitized = cleanFirestoreObject(memberData);
-    await setDoc(docRef, sanitized, { merge: true });
-  } catch (err) {
-    console.warn('Could not write member to Firestore (saved locally):', err);
-  }
+  const sanitized = cleanFirestoreObject(memberData);
+  await setDoc(docRef, sanitized, { merge: true });
 
   return memberData;
 }
@@ -487,7 +436,6 @@ export async function syncReclubMembers(rawPayload: string | any, clubId?: strin
     failedCount,
     errors,
     syncedAt: new Date().toISOString(),
-    syncedMembers: parsedMembers,
   };
 
   try {
@@ -512,22 +460,10 @@ export async function syncReclubMembers(rawPayload: string | any, clubId?: strin
 }
 
 /**
- * Extracts embedded JSON or member records from an HTML page (e.g. Next.js __NEXT_DATA__, JSON-LD, or script tags)
+ * Extracts embedded JSON or member records from an HTML page (e.g. Next.js __NEXT_DATA__ or script tags)
  */
 function extractFromHtml(html: string): any | null {
-  // 1. Look for Schema.org JSON-LD
-  const jsonLdRegex = /<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/gi;
-  let ldMatch;
-  while ((ldMatch = jsonLdRegex.exec(html)) !== null) {
-    try {
-      const ldObj = JSON.parse(ldMatch[1]);
-      if (Array.isArray(ldObj?.attendee)) return ldObj.attendee;
-      if (Array.isArray(ldObj?.member)) return ldObj.member;
-      if (Array.isArray(ldObj?.participants)) return ldObj.participants;
-    } catch {}
-  }
-
-  // 2. Look for Next.js __NEXT_DATA__
+  // 1. Look for Next.js __NEXT_DATA__
   const nextDataMatch = html.match(/<script\s+id="__NEXT_DATA__"\s+type="application\/json">([\s\S]*?)<\/script>/i);
   if (nextDataMatch && nextDataMatch[1]) {
     try {
@@ -539,7 +475,7 @@ function extractFromHtml(html: string): any | null {
     } catch {}
   }
 
-  // 3. Look for window.__INITIAL_STATE__ or state blobs
+  // 2. Look for window.__INITIAL_STATE__ or state blobs
   const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/i);
   if (stateMatch && stateMatch[1]) {
     try {
@@ -547,7 +483,7 @@ function extractFromHtml(html: string): any | null {
     } catch {}
   }
 
-  // 4. Look for any script tag containing "members" or "players" or "roster" or "attendees"
+  // 3. Look for any script tag containing "members" or "players" or "roster"
   const scriptRegex = /<script(?:\s+type="application\/json")?>([\s\S]*?)<\/script>/gi;
   let match;
   while ((match = scriptRegex.exec(html)) !== null) {
@@ -558,13 +494,9 @@ function extractFromHtml(html: string): any | null {
         if (
           Array.isArray(candidate) ||
           Array.isArray(candidate?.members) ||
-          Array.isArray(candidate?.attendees) ||
-          Array.isArray(candidate?.confirmed) ||
           Array.isArray(candidate?.data) ||
           Array.isArray(candidate?.club?.members) ||
-          Array.isArray(candidate?.club?.roster) ||
-          Array.isArray(candidate?.event?.attendees) ||
-          Array.isArray(candidate?.group?.members)
+          Array.isArray(candidate?.club?.roster)
         ) {
           return candidate;
         }
@@ -577,7 +509,7 @@ function extractFromHtml(html: string): any | null {
 
 /**
  * Fetches and synchronizes Reclub member data directly from a web URL link.
- * Handles Reclub club URLs, event RSVP links, group pages, API endpoints, published Google Sheets CSV links, and hosted roster JSONs.
+ * Handles Reclub club URLs, API endpoints, published Google Sheets CSV links, and hosted roster JSONs.
  */
 export async function fetchAndSyncReclubFromUrl(rawUrl: string, fallbackClubId?: string): Promise<ReclubSyncResult> {
   const trimmed = rawUrl.trim();
@@ -587,7 +519,7 @@ export async function fetchAndSyncReclubFromUrl(rawUrl: string, fallbackClubId?:
       importedCount: 0,
       updatedCount: 0,
       failedCount: 0,
-      errors: ['Please enter a valid Reclub club URL, event link, or roster URL.'],
+      errors: ['Please enter a valid Reclub club URL or roster link.'],
       syncedAt: new Date().toISOString(),
     };
   }
@@ -597,9 +529,9 @@ export async function fetchAndSyncReclubFromUrl(rawUrl: string, fallbackClubId?:
     ? trimmed
     : `https://${trimmed}`;
 
-  // Extract club or event identifier if present in URL (e.g. reclub.co/clubs/sunset-pickleball or reclub.co/events/xyz)
+  // Extract club handle if present in URL (e.g. reclub.co/clubs/sunset-pickleball)
   let extractedClubId = fallbackClubId;
-  const clubMatch = fullUrl.match(/reclub\.co\/(?:clubs|events|groups|c|m)\/([a-zA-Z0-9_\-]+)/i);
+  const clubMatch = fullUrl.match(/reclub\.co\/clubs\/([a-zA-Z0-9_\-]+)/i);
   if (clubMatch && clubMatch[1]) {
     extractedClubId = clubMatch[1];
   }
