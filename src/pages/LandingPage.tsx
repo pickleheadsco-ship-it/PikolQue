@@ -48,8 +48,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
 
   // New Session Creation Form state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [sessionName, setSessionName] = useState('Friday Night Open Play');
-  const [venueName, setVenueName] = useState('PickleCenter Arena');
+  const [sessionName, setSessionName] = useState('');
+  const [venueName, setVenueName] = useState('');
   const [courtCount, setCourtCount] = useState(3);
   const [matchMode, setMatchMode] = useState<MatchingMode>('balanced');
   const [isCreating, setIsCreating] = useState(false);
@@ -189,36 +189,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
     } catch (err: any) {
       console.error('Session creation error:', err);
       setCreateSessionError(err?.message || 'Failed to create session. Please try again.');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleQuickDemoSession = async () => {
-    setIsCreating(true);
-    try {
-      let currentUser = user;
-      if (!currentUser) {
-        try {
-          currentUser = await signInAsAnonymousPlayer();
-        } catch {}
-      }
-      const effectiveOrganizerEmail = user?.email || organizerEmail || 'organizer@picklequeue.internal';
-      const effectiveOrganizerId = currentUser?.uid || `org-${Date.now()}`;
-      const sessionId = await createSession({
-        name: 'PickleQueue Open Play (Demo)',
-        venueName: 'Sunset Club Courts',
-        numberOfCourts: 3,
-        matchingMode: 'balanced',
-        organizerId: effectiveOrganizerId,
-        organizerEmail: effectiveOrganizerEmail,
-      });
-      if (sessionId) {
-        fetchActiveSessions();
-        onSelectSession(sessionId, 'organizer');
-      }
-    } catch (err) {
-      console.error('Demo session creation error:', err);
     } finally {
       setIsCreating(false);
     }
@@ -658,9 +628,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Friday Night Open Play"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden"
+                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
               </div>
@@ -673,9 +644,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Downtown Pickleball Complex"
                     value={venueName}
                     onChange={(e) => setVenueName(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden"
+                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden placeholder:text-slate-400 placeholder:font-normal"
                   />
                 </div>
               </div>

@@ -365,22 +365,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'audit' && (
           <div className="clay-card rounded-3xl p-6 sm:p-7">
             <h2 className="font-black text-slate-900 text-base mb-1">Operational Audit Trail</h2>
-            <p className="text-xs text-slate-500 mb-4 font-medium">Immutable session logs for dispute resolution</p>
+            <p className="text-xs text-slate-500 mb-4 font-medium">Immutable session logs for dispute resolution and transparency</p>
 
-            <div className="space-y-2.5 text-xs font-mono">
-              <div className="p-3.5 clay-subcard rounded-2xl flex justify-between">
-                <span>[SESSION_STARTED] venue: PickleCenter Arena courts: 3 mode: balanced</span>
-                <span className="text-slate-400 font-bold">System</span>
+            {sessions.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                No system audit logs recorded yet. Operational events and match resolutions are logged automatically during live sessions.
               </div>
-              <div className="p-3.5 clay-subcard rounded-2xl flex justify-between">
-                <span>[MATCH_COMPLETED] Court 1 — Winning Team: Team A — 11 to 9</span>
-                <span className="text-slate-400 font-bold">Organizer</span>
+            ) : (
+              <div className="space-y-2.5 text-xs font-mono">
+                {sessions.map((s) => (
+                  <div key={s.id} className="p-3.5 clay-subcard rounded-2xl flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-slate-800">
+                      [SESSION_{s.status.toUpperCase()}] venue: {s.venueName || 'Facility'} • courts: {s.numberOfCourts} • mode: {s.matchingMode} • code: {s.joinCode}
+                    </span>
+                    <span className="text-slate-400 font-bold text-[11px]">
+                      {s.organizerEmail || 'Admin'}
+                    </span>
+                  </div>
+                ))}
               </div>
-              <div className="p-3.5 clay-subcard rounded-2xl flex justify-between">
-                <span>[MATCHING_MODE_CHANGED] Updated mode to social_mix</span>
-                <span className="text-slate-400 font-bold">Organizer</span>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>

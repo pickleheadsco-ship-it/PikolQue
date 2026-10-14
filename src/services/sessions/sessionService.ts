@@ -107,8 +107,8 @@ export async function createSession(params: CreateSessionParams): Promise<string
 
   const sessionData: Omit<Session, 'id'> = {
     venueId: 'v-default',
-    venueName: params.venueName.trim() || 'Community Pickleball Center',
-    name: params.name.trim() || 'Friday Night Open Play',
+    venueName: params.venueName.trim() || 'Pickleball Facility',
+    name: params.name.trim() || 'Open Play Session',
     sport: 'pickleball',
     status: 'active',
     matchingMode: params.matchingMode || 'balanced',
