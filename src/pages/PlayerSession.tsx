@@ -481,7 +481,11 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
                   <span className="text-xs font-bold text-emerald-800 block">Playing on</span>
                   <span className="text-2xl font-black text-emerald-950 mt-0.5 block">{activeCourt.name}</span>
                   <div className="mt-2.5 mb-3.5 inline-block">
-                    <MatchTimer startedAt={activeMatch?.startedAt} className="text-xs" />
+                    <MatchTimer
+                      startedAt={activeMatch?.startedAt}
+                      limitMinutes={session?.courtPlaytimeLimitMinutes || 15}
+                      className="text-xs"
+                    />
                   </div>
                   <button
                     onClick={() => setShowRecordResultModal(true)}

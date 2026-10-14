@@ -51,6 +51,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
   const [sessionName, setSessionName] = useState('');
   const [venueName, setVenueName] = useState('');
   const [courtCount, setCourtCount] = useState(3);
+  const [courtPlaytimeLimit, setCourtPlaytimeLimit] = useState(15);
   const [matchMode, setMatchMode] = useState<MatchingMode>('balanced');
   const [isCreating, setIsCreating] = useState(false);
   const [createSessionError, setCreateSessionError] = useState<string | null>(null);
@@ -173,6 +174,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
         venueName: venueName.trim() || 'PickleCenter Arena',
         numberOfCourts: courtCount || 3,
         matchingMode: matchMode || 'balanced',
+        courtPlaytimeLimitMinutes: courtPlaytimeLimit || 15,
         organizerId: effectiveOrganizerId,
         organizerEmail: effectiveOrganizerEmail,
       });
@@ -347,8 +349,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
             smart matching algorithms.
           </p>
 
+          {/* Primary Landing Page CTA: Book a Demo */}
+          {!isAdmin && !isOrganizer && (
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => setShowBookDemoModal(true)}
+                className="clay-btn clay-btn-primary px-8 py-3.5 rounded-2xl text-sm font-black text-white shadow-xl flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 transition-all ring-2 ring-emerald-300"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Book a Demo</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="clay-btn clay-btn-secondary px-5 py-3.5 rounded-2xl text-sm font-bold text-slate-800 shadow-xs flex items-center gap-2 cursor-pointer hover:border-emerald-300 transition-colors"
+              >
+                <Lock className="w-4 h-4 text-emerald-600" />
+                <span>Admin Login</span>
+              </button>
+            </div>
+          )}
+
           {/* Quick Join By Code Bar */}
           <div className="mt-6 sm:mt-8 max-w-md mx-auto">
+            {!isAdmin && !isOrganizer && (
+              <div className="text-center mb-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  Already at a club? Join active queue
+                </span>
+              </div>
+            )}
             <div className="clay-card rounded-3xl p-2.5">
               <form onSubmit={handleJoinByCode} className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 clay-inset rounded-2xl px-4 py-2.5 flex items-center">
@@ -685,6 +715,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                     <option value="winners_losers">Winners / Losers (Split Results)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Court Playtime Limit
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg clay-pill">
+                    Max 17 min
+                  </span>
+                </div>
+                <div className="clay-inset rounded-2xl px-3 py-2">
+                  <select
+                    value={courtPlaytimeLimit}
+                    onChange={(e) => setCourtPlaytimeLimit(parseInt(e.target.value, 10) || 15)}
+                    className="w-full bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden"
+                  >
+                    <option value={15}>15 Minutes (Mandatory standard)</option>
+                    <option value={16}>16 Minutes</option>
+                    <option value={17}>17 Minutes (Maximum limit)</option>
+                    <option value={12}>12 Minutes (Fast-paced)</option>
+                    <option value={10}>10 Minutes (Express rotation)</option>
+                  </select>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                  Enforces 4-in/4-out rotation notifications when courts reach playtime limit.
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3">

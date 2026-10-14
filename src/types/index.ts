@@ -51,6 +51,7 @@ export interface Session {
   qrUrl?: string;
   organizerId: string;
   organizerEmail?: string;
+  courtPlaytimeLimitMinutes?: number; // Mandatory court playtime limit in minutes (max 17 min, default 15 min)
   announcementSettings: AnnouncementSettings;
   startedAt?: any;
   endedAt?: any;
@@ -180,6 +181,7 @@ export interface ReclubSyncResult {
   failedCount: number;
   errors: string[];
   syncedAt: string;
+  syncedMembers?: Partial<ClubMember>[];
 }
 
 export interface DemoRequest {

@@ -45,6 +45,7 @@ export interface CreateSessionParams {
   maxPlayers?: number;
   organizerId: string;
   organizerEmail?: string;
+  courtPlaytimeLimitMinutes?: number;
   announcementSettings?: {
     enabled: boolean;
     volume: number;
@@ -117,6 +118,7 @@ export async function createSession(params: CreateSessionParams): Promise<string
     joinCode,
     organizerId: params.organizerId,
     organizerEmail: params.organizerEmail || '',
+    courtPlaytimeLimitMinutes: Math.min(17, Math.max(5, params.courtPlaytimeLimitMinutes ?? 15)),
     announcementSettings: params.announcementSettings || {
       enabled: true,
       volume: 1,
@@ -661,6 +663,19 @@ export async function updateSessionMode(sessionId: string, matchingMode: Matchin
   try {
     await updateDoc(ref, {
       matchingMode,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `sessions/${sessionId}`);
+  }
+}
+
+export async function updateSessionPlaytimeLimit(sessionId: string, limitMinutes: number): Promise<void> {
+  const ref = doc(db, `sessions/${sessionId}`);
+  const clamped = Math.min(17, Math.max(5, Math.round(limitMinutes)));
+  try {
+    await updateDoc(ref, {
+      courtPlaytimeLimitMinutes: clamped,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {

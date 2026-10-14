@@ -8,6 +8,7 @@ interface CourtCardProps {
   court: Court;
   currentMatch?: Match | null;
   participants: Participant[];
+  playtimeLimitMinutes?: number;
   onEndMatch: (court: Court, match: Match) => void;
   onAnnounceCourt: (court: Court, match?: Match) => void;
   onAssignNextGroup: (court: Court) => void;
@@ -19,6 +20,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({
   court,
   currentMatch,
   participants,
+  playtimeLimitMinutes,
   onEndMatch,
   onAnnounceCourt,
   onAssignNextGroup,
@@ -86,7 +88,11 @@ export const CourtCard: React.FC<CourtCardProps> = ({
         <div className="flex items-center gap-2">
           {isPlaying && (
             <div className="clay-inset px-2.5 py-1 rounded-xl">
-              <MatchTimer startedAt={effectiveMatch.startedAt} className="bg-transparent border-0 p-0 text-xs text-emerald-800" />
+              <MatchTimer
+                startedAt={effectiveMatch.startedAt}
+                limitMinutes={playtimeLimitMinutes || 15}
+                className="bg-transparent border-0 p-0 text-xs"
+              />
             </div>
           )}
 

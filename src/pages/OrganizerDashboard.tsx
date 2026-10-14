@@ -24,6 +24,7 @@ import {
   updateParticipantRestStatus,
   leaveSession,
   updateSessionMode,
+  updateSessionPlaytimeLimit,
   addCourtToSession,
   forceResetCourt,
   createSession,
@@ -46,6 +47,7 @@ import {
   Activity,
   ListOrdered,
   Lock,
+  Clock,
 } from 'lucide-react';
 
 interface OrganizerDashboardProps {
@@ -519,6 +521,45 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                     <span>Court</span>
                   </button>
                 </div>
+
+                {/* Court Mandatory Playtime Limit Configuration (Max 15-17 min) */}
+                <div className="pt-2.5 border-t border-slate-200/60 mt-1">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                      <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Court Playtime Limit</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-lg clay-pill">
+                      Max 17 min
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[15, 16, 17].map((mins) => {
+                      const isActive = (session?.courtPlaytimeLimitMinutes || 15) === mins;
+                      return (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => {
+                            if (sessionId) {
+                              updateSessionPlaytimeLimit(sessionId, mins);
+                            }
+                          }}
+                          className={`py-1.5 text-xs font-black rounded-xl transition-all clay-btn cursor-pointer ${
+                            isActive
+                              ? 'clay-btn-primary shadow-xs'
+                              : 'clay-btn-secondary text-slate-700 hover:text-slate-900'
+                          }`}
+                        >
+                          {mins} min
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                    Courts visually flag when playtime expires for mandatory 4-in/4-out rotation.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -549,6 +590,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
                       court={court}
                       currentMatch={currentMatch}
                       participants={participants}
+                      playtimeLimitMinutes={session?.courtPlaytimeLimitMinutes || 15}
                       onEndMatch={(c, m) => setActiveEndingCourt({ court: c, match: m })}
                       onAnnounceCourt={handleAnnounceCourt}
                       onAssignNextGroup={(c) => {

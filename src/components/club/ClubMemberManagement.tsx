@@ -5,6 +5,7 @@ import {
   deleteClubMember,
   saveClubMember,
   syncReclubMembers,
+  fetchAndSyncReclubFromUrl,
 } from '../../services/reclub/reclubSyncService';
 import { joinSessionAsParticipant } from '../../services/sessions/sessionService';
 import { SkillBadge } from '../ui/Badge';
@@ -24,6 +25,9 @@ import {
   X,
   Plus,
   UserCheck,
+  Globe,
+  Link2,
+  FileText,
 } from 'lucide-react';
 
 interface ClubMemberManagementProps {
@@ -57,8 +61,10 @@ export const ClubMemberManagement: React.FC<ClubMemberManagementProps> = ({
 
   // Reclub Sync Modal state
   const [showReclubModal, setShowReclubModal] = useState(false);
+  const [syncTab, setSyncTab] = useState<'url' | 'paste' | 'file'>('url');
+  const [reclubUrl, setReclubUrl] = useState('');
   const [reclubInput, setReclubInput] = useState('');
-  const [reclubClubId, setReclubClubId] = useState('sunset-pickle-club');
+  const [reclubClubId, setReclubClubId] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{
     success: boolean;
@@ -147,7 +153,66 @@ export const ClubMemberManagement: React.FC<ClubMemberManagementProps> = ({
     }
   };
 
-  // Handler: Reclub Sync Execution
+  // Handler: Reclub Direct URL Sync Execution
+  const handleRunReclubUrlSync = async () => {
+    const raw = reclubUrl.trim();
+    if (!raw) {
+      alert('Please provide a Reclub club URL, API endpoint, or published roster link.');
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncResult(null);
+
+    try {
+      const result = await fetchAndSyncReclubFromUrl(raw, reclubClubId || undefined);
+
+      if (result.success || result.importedCount > 0 || result.updatedCount > 0) {
+        setSyncResult({
+          success: true,
+          message: `Reclub URL sync complete: ${result.importedCount} new members added, ${result.updatedCount} existing members updated.`,
+          imported: result.importedCount,
+          updated: result.updatedCount,
+        });
+        await loadMembers();
+      } else {
+        setSyncResult({
+          success: false,
+          message: result.errors.join(' • ') || 'Reclub synchronization could not parse any member records from this URL link.',
+          imported: 0,
+          updated: 0,
+        });
+      }
+    } catch (err: any) {
+      console.error('Reclub URL sync failure:', err);
+      setSyncResult({
+        success: false,
+        message: `Sync error: ${err?.message || 'Network or CORS transaction error'}`,
+        imported: 0,
+        updated: 0,
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Handler: File Upload for Roster Import (JSON / CSV)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        setReclubInput(content);
+        await handleRunReclubSync(content);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Handler: Reclub Payload Sync Execution
   const handleRunReclubSync = async (payloadToUse?: string) => {
     const raw = payloadToUse !== undefined ? payloadToUse : reclubInput;
     if (!raw.trim()) {
@@ -159,7 +224,7 @@ export const ClubMemberManagement: React.FC<ClubMemberManagementProps> = ({
     setSyncResult(null);
 
     try {
-      const result = await syncReclubMembers(raw, reclubClubId);
+      const result = await syncReclubMembers(raw, reclubClubId || undefined);
 
       if (result.success || result.importedCount > 0 || result.updatedCount > 0) {
         setSyncResult({
@@ -733,80 +798,192 @@ export const ClubMemberManagement: React.FC<ClubMemberManagementProps> = ({
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-black uppercase text-slate-700 mb-1">
-                  Reclub Club ID or Handle
-                </label>
-                <div className="clay-inset rounded-2xl px-3 py-2">
-                  <input
-                    type="text"
-                    value={reclubClubId}
-                    onChange={(e) => setReclubClubId(e.target.value)}
-                    placeholder="e.g. sunset-pickleball-club"
-                    className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
-                  />
-                </div>
-              </div>
+            {/* Segmented Mode Selector */}
+            <div className="flex rounded-2xl bg-slate-100 p-1 mb-4 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setSyncTab('url')}
+                className={`flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  syncTab === 'url'
+                    ? 'bg-white text-emerald-800 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                <span>Web URL Link</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSyncTab('paste')}
+                className={`flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  syncTab === 'paste'
+                    ? 'bg-white text-emerald-800 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Paste Payload</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSyncTab('file')}
+                className={`flex-1 py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  syncTab === 'file'
+                    ? 'bg-white text-emerald-800 shadow-xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload File</span>
+              </button>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-black uppercase text-slate-700">
-                    Paste Reclub Export Payload (JSON or CSV)
-                  </label>
-                  <div className="flex items-center gap-1.5 text-[10px]">
+            <div className="space-y-4">
+              {/* TAB 1: SYNC VIA URL LINK */}
+              {syncTab === 'url' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-700 mb-1">
+                      Reclub Club URL or Public Roster Link
+                    </label>
+                    <div className="clay-inset rounded-2xl px-3 py-2.5 flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+                      <input
+                        type="url"
+                        value={reclubUrl}
+                        onChange={(e) => setReclubUrl(e.target.value)}
+                        placeholder="https://reclub.co/clubs/sunset-pickleball or roster CSV URL"
+                        className="w-full bg-transparent text-xs font-medium text-slate-900 focus:outline-hidden"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1 font-medium leading-relaxed">
+                      Syncs members directly via web URL link. Supports Reclub club URLs, API endpoints, and published spreadsheet CSV rosters.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-700 mb-1">
+                      Reclub Club ID or Slug (Optional)
+                    </label>
+                    <div className="clay-inset rounded-2xl px-3 py-2">
+                      <input
+                        type="text"
+                        value={reclubClubId}
+                        onChange={(e) => setReclubClubId(e.target.value)}
+                        placeholder="e.g. sunset-pickleball-club"
+                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setReclubInput(`[\n  { "name": "Sarah Connor", "email": "sarah@gmail.com", "rating": 3.75, "status": "active" },\n  { "name": "Marcus Vance", "email": "marcus@gmail.com", "rating": 4.5, "status": "active" }\n]`)}
-                      className="text-emerald-700 font-bold hover:underline cursor-pointer"
+                      onClick={() => setShowReclubModal(false)}
+                      className="px-4 py-2.5 rounded-2xl clay-btn clay-btn-secondary text-xs font-bold cursor-pointer"
                     >
-                      JSON Format
+                      Close
                     </button>
-                    <span className="text-slate-300">•</span>
                     <button
                       type="button"
-                      onClick={() => setReclubInput(`Name,Email,DUPR,Status\nSarah Connor,sarah@gmail.com,3.75,active\nMarcus Vance,marcus@gmail.com,4.50,active`)}
-                      className="text-emerald-700 font-bold hover:underline cursor-pointer"
+                      onClick={handleRunReclubUrlSync}
+                      disabled={isSyncing || !reclubUrl.trim()}
+                      className="px-5 py-2.5 rounded-2xl clay-btn clay-btn-primary text-xs font-black shadow-md flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
                     >
-                      CSV Format
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Fetching & Syncing...' : 'Sync from URL Link'}</span>
                     </button>
                   </div>
                 </div>
-                <div className="clay-inset rounded-2xl p-3">
-                  <textarea
-                    rows={6}
-                    value={reclubInput}
-                    onChange={(e) => setReclubInput(e.target.value)}
-                    placeholder={`[
-  { "name": "Sarah Connor", "rating": 3.75, "email": "sarah@gmail.com" },
-  { "name": "Marcus Vance", "rating": 4.5, "email": "marcus@gmail.com" }
-]`}
-                    className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-hidden resize-none"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1 font-medium">
-                  Accepts Reclub JSON exports, nested API responses, or CSV lines (Name, Email, Rating, DUPR).
-                </p>
-              </div>
+              )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowReclubModal(false)}
-                  className="px-4 py-2.5 rounded-2xl clay-btn clay-btn-secondary text-xs font-bold"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRunReclubSync()}
-                  disabled={isSyncing || !reclubInput.trim()}
-                  className="px-5 py-2.5 rounded-2xl clay-btn clay-btn-primary text-xs font-black shadow-md flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing ? 'Synchronizing...' : 'Sync Members Now'}</span>
-                </button>
-              </div>
+              {/* TAB 2: PASTE PAYLOAD (NO DEMO INJECTION BUTTONS) */}
+              {syncTab === 'paste' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-700 mb-1">
+                      Reclub Export Payload (JSON or CSV)
+                    </label>
+                    <div className="clay-inset rounded-2xl p-3">
+                      <textarea
+                        rows={6}
+                        value={reclubInput}
+                        onChange={(e) => setReclubInput(e.target.value)}
+                        placeholder={`Paste Reclub JSON export or CSV text here:\n[\n  { "name": "Player Name", "email": "player@club.com", "duprRating": 3.75, "status": "active" }\n]`}
+                        className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 focus:outline-hidden resize-none"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                      Accepts Reclub JSON exports, nested API responses, or CSV lines (Name, Email, Rating, DUPR).
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase text-slate-700 mb-1">
+                      Reclub Club ID or Handle (Optional)
+                    </label>
+                    <div className="clay-inset rounded-2xl px-3 py-2">
+                      <input
+                        type="text"
+                        value={reclubClubId}
+                        onChange={(e) => setReclubClubId(e.target.value)}
+                        placeholder="e.g. sunset-pickleball-club"
+                        className="w-full bg-transparent text-xs font-mono font-bold text-slate-900 focus:outline-hidden"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowReclubModal(false)}
+                      className="px-4 py-2.5 rounded-2xl clay-btn clay-btn-secondary text-xs font-bold cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRunReclubSync()}
+                      disabled={isSyncing || !reclubInput.trim()}
+                      className="px-5 py-2.5 rounded-2xl clay-btn clay-btn-primary text-xs font-black shadow-md flex items-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Synchronizing...' : 'Sync Members Now'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: FILE UPLOAD */}
+              {syncTab === 'file' && (
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-emerald-300 transition-colors">
+                    <Upload className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                    <label className="block text-xs font-black text-slate-800 cursor-pointer mb-1">
+                      <span>Click to upload roster file</span>
+                      <input
+                        type="file"
+                        accept=".json,.csv,.txt"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      Select your exported Reclub JSON, CSV, or text roster file from your device.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowReclubModal(false)}
+                      className="px-4 py-2.5 rounded-2xl clay-btn clay-btn-secondary text-xs font-bold cursor-pointer"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
