@@ -13,6 +13,7 @@ import {
   Activity,
   CheckCircle,
   Save,
+  Lock,
 } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
@@ -26,7 +27,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onBackToHome,
   onOpenSession,
 }) => {
-  const { user, organizerEmail } = useAuth();
+  const { user, isAdmin, organizerEmail, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'rules' | 'audit'>('overview');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="clay-card rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-xl border-2 border-rose-300">
+          <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center mx-auto clay-subcard">
+            <Lock className="w-7 h-7 text-rose-600" />
+          </div>
+          <h2 className="font-black text-xl text-slate-900">Admin Authentication Required</h2>
+          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+            This administrator console is restricted to verified platform administrators. Please sign in with authorized administrator credentials.
+          </p>
+          <button
+            onClick={onBackToHome}
+            className="w-full py-3 clay-btn clay-btn-primary rounded-2xl text-xs font-black shadow-md cursor-pointer"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const fetchSessions = async () => {
     setLoading(true);

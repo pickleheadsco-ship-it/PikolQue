@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from '../context/SessionContext';
 import { Participant, Court, Match } from '../types';
 import { SkillBadge, StatusBadge } from '../components/ui/Badge';
@@ -9,6 +9,7 @@ import { ProfileModal } from '../components/profile/ProfileModal';
 import { LiveLeaderboard } from '../components/leaderboard/LiveLeaderboard';
 import { MatchResultModal } from '../components/matches/MatchResultModal';
 import { NextPlayModal } from '../components/notifications/NextPlayModal';
+import { PostGameLeaderboardModal } from '../components/notifications/PostGameLeaderboardModal';
 import { notificationService } from '../services/notifications/notificationService';
 import {
   updateParticipantRestStatus,
@@ -26,6 +27,7 @@ import {
   Users,
   Bell,
   BellRing,
+  ArrowRight,
 } from 'lucide-react';
 
 interface PlayerSessionProps {
@@ -54,6 +56,7 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
   const [matchAcknowledged, setMatchAcknowledged] = useState(false);
   const [isUpdatingRest, setIsUpdatingRest] = useState(false);
   const [showRecordResultModal, setShowRecordResultModal] = useState(false);
+  const [showPostGameModal, setShowPostGameModal] = useState(false);
   const [playerTab, setPlayerTab] = useState<'myQueue' | 'leaderboard'>('myQueue');
   const [showProfileModal, setShowProfileModal] = useState(false);
 
@@ -67,6 +70,12 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
   });
   const [hasDismissedOnDeck, setHasDismissedOnDeck] = useState(false);
   const [hasDismissedPlaying, setHasDismissedPlaying] = useState(false);
+
+  // References to track match transitions and prevent repeat popups
+  const prevMatchIdRef = useRef<string | null>(null);
+  const prevGamesPlayedRef = useRef<number>(currentParticipant?.gamesPlayed || 0);
+  const dismissedPlayingMatchIdRef = useRef<string | null>(null);
+  const dismissedOnDeckProposalRef = useRef<string | null>(null);
 
   // Check if player is currently playing on an active match
   const activeMatch = currentParticipant
@@ -88,42 +97,61 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
   const queuePos = playerQueueIndex !== -1 ? playerQueueIndex + 1 : null;
   const estimatedWaitMins = queuePos ? Math.max(2, Math.round((queuePos / 4) * 12)) : 0;
 
-  // Push notification and pop-up trigger evaluation
+  // Deterministic evaluation for Next Play alerts & Post-Game Leaderboard
   useEffect(() => {
     if (!currentParticipant) return;
 
-    const alert = notificationService.evaluateStatusChange({
-      participantId: currentParticipant.participantId,
-      participantName: currentParticipant.name,
-      status: currentParticipant.status,
-      currentCourtName: activeCourt?.name,
-      currentMatchId: activeMatch?.matchId,
-      isOnDeck,
-      queuePosition: queuePos,
-    });
+    const currentMatchId = activeMatch?.matchId || null;
+    const currentGamesCount = currentParticipant.gamesPlayed || 0;
 
-    if (alert?.type === 'playing' && !hasDismissedPlaying) {
-      setNextPlayAlert({ open: true, type: 'playing' });
-    } else if (alert?.type === 'on_deck' && !hasDismissedOnDeck) {
-      setNextPlayAlert({ open: true, type: 'on_deck' });
+    // 1. Post-Game Leaderboard trigger: match just ended or games played count incremented
+    if (
+      prevMatchIdRef.current &&
+      !currentMatchId &&
+      (currentGamesCount > prevGamesPlayedRef.current || currentParticipant.lastMatchResult)
+    ) {
+      setShowPostGameModal(true);
+    } else if (
+      prevGamesPlayedRef.current > 0 &&
+      currentGamesCount > prevGamesPlayedRef.current &&
+      !activeMatch
+    ) {
+      setShowPostGameModal(true);
     }
+
+    // 2. Next Play: Called to active match on court
+    if (activeMatch && activeCourt && dismissedPlayingMatchIdRef.current !== activeMatch.matchId) {
+      setNextPlayAlert({ open: true, type: 'playing' });
+      notificationService.playChime('urgent');
+    } else if (isOnDeck && nextProposal && !activeMatch) {
+      const proposalKey = nextProposal.players.map((p) => p.participantId).sort().join(',');
+      if (dismissedOnDeckProposalRef.current !== proposalKey) {
+        setNextPlayAlert({ open: true, type: 'on_deck' });
+        notificationService.playChime('alert');
+      }
+    }
+
+    prevMatchIdRef.current = currentMatchId;
+    prevGamesPlayedRef.current = currentGamesCount;
   }, [
     currentParticipant?.status,
-    activeCourt?.name,
+    currentParticipant?.gamesPlayed,
+    currentParticipant?.lastMatchResult,
     activeMatch?.matchId,
+    activeCourt?.courtId,
     isOnDeck,
-    queuePos,
-    hasDismissedPlaying,
-    hasDismissedOnDeck,
+    nextProposal,
   ]);
 
   // Reset dismissal memory when player returns to regular waiting queue
   useEffect(() => {
-    if (currentParticipant?.status === 'waiting' && !isOnDeck) {
+    if (currentParticipant?.status === 'waiting' && !isOnDeck && !activeMatch) {
       setHasDismissedOnDeck(false);
       setHasDismissedPlaying(false);
+      dismissedPlayingMatchIdRef.current = null;
+      dismissedOnDeckProposalRef.current = null;
     }
-  }, [currentParticipant?.status, isOnDeck]);
+  }, [currentParticipant?.status, isOnDeck, activeMatch]);
 
   if (loading) {
     return (
@@ -232,7 +260,10 @@ export const PlayerSession: React.FC<PlayerSessionProps> = ({
     if (!activeCourt || !activeMatch) return;
     try {
       await completeMatch(sessionId, activeMatch.matchId, activeCourt.courtId, winningTeam, score);
-    } finally {
+      setShowRecordResultModal(false);
+      setShowPostGameModal(true);
+    } catch (err) {
+      console.error('Error completing match from player session:', err);
       setShowRecordResultModal(false);
     }
   };

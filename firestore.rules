@@ -19,6 +19,7 @@ service cloud.firestore {
     function isBootstrapAdmin() {
       return isSignedIn() && (
         (request.auth.token.email == 'pickleheadsco@gmail.com') ||
+        (request.auth.token.email == 'ymirgaming28@gmail.com') ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -41,6 +42,22 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if isBootstrapAdmin();
+    }
+
+    // Club Members (member management & Reclub sync)
+    match /club_members/{memberId} {
+      allow read, write: if true;
+    }
+
+    // Reclub Sync Status and Logs
+    match /reclub_sync/{syncId} {
+      allow read, write: if true;
+    }
+
+    // Demo Requests from Home page Book a Demo
+    match /demo_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if true;
     }
 
     // Venues

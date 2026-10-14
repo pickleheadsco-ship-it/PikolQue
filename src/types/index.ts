@@ -150,3 +150,47 @@ export interface GroupMatchProposal {
   reasoning: string;
   skillDelta: number;
 }
+
+export interface ClubMember {
+  id: string;
+  reclubId?: string;
+  name: string;
+  firstName?: string;
+  surname?: string;
+  email?: string;
+  phone?: string;
+  avatarUrl?: string;
+  skillLevel: SkillLevel;
+  duprRating?: number;
+  status: 'active' | 'inactive' | 'suspended';
+  membershipTier?: string;
+  source: 'reclub' | 'manual';
+  gamesPlayed?: number;
+  wins?: number;
+  winRate?: number;
+  lastSyncedAt?: any;
+  createdAt: any;
+  updatedAt?: any;
+}
+
+export interface ReclubSyncResult {
+  success: boolean;
+  importedCount: number;
+  updatedCount: number;
+  failedCount: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export interface DemoRequest {
+  id?: string;
+  clubName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  numberOfCourts: number;
+  estimatedMembers?: string;
+  notes?: string;
+  createdAt: any;
+  status: 'pending' | 'contacted' | 'scheduled';
+}

@@ -28,6 +28,8 @@ import {
   forceResetCourt,
   createSession,
 } from '../services/sessions/sessionService';
+import { useAuth } from '../context/AuthContext';
+import { OrganizerLoginModal } from '../components/auth/OrganizerLoginModal';
 import {
   QrCode,
   Volume2,
@@ -43,6 +45,7 @@ import {
   Layers,
   Activity,
   ListOrdered,
+  Lock,
 } from 'lucide-react';
 
 interface OrganizerDashboardProps {
@@ -70,6 +73,8 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
     setSessionId,
   } = useSession();
 
+  const { isAdmin, isOrganizer, loading: authLoading } = useAuth();
+
   // Mobile section tab (Courts | Queue | Next | Leaderboard)
   const [mobileSection, setMobileSection] = useState<'all' | 'courts' | 'next' | 'queue' | 'leaderboard'>('all');
 
@@ -81,6 +86,7 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [isAutoCreating, setIsAutoCreating] = useState(false);
 
   // Result Modal State
@@ -88,6 +94,49 @@ export const OrganizerDashboard: React.FC<OrganizerDashboardProps> = ({
 
   // Selected participant IDs for manual operations
   const [selectedQueueIds, setSelectedQueueIds] = useState<string[]>([]);
+
+  // Restrict full system access to authenticated administrators only
+  if (!authLoading && !isAdmin && !isOrganizer) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="clay-card rounded-3xl p-7 text-center max-w-md w-full shadow-xl border-2 border-emerald-400 space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto clay-subcard">
+            <Lock className="w-7 h-7 text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="font-black text-slate-900 text-xl tracking-tight">Admin Authentication Required</h3>
+            <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">
+              Organizer and court dispatch terminals are strictly restricted to verified club administrators and organizers.
+            </p>
+          </div>
+
+          <div className="pt-2 space-y-2.5">
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs font-black shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Sign In with Admin Credentials</span>
+            </button>
+            <button
+              onClick={onBackToHome}
+              className="w-full py-2.5 clay-btn clay-btn-secondary text-slate-700 rounded-2xl text-xs font-bold cursor-pointer"
+            >
+              Return to Home
+            </button>
+          </div>
+
+          {showAuthModal && (
+            <OrganizerLoginModal
+              isOpen={showAuthModal}
+              onClose={() => setShowAuthModal(false)}
+              onSuccess={() => setShowAuthModal(false)}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleLaunchEmergencySession = async () => {
     setIsAutoCreating(true);

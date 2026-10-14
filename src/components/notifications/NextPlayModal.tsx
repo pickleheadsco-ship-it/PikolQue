@@ -14,12 +14,15 @@ import {
 } from 'lucide-react';
 import { notificationService } from '../../services/notifications/notificationService';
 
+import { GroupMatchProposal } from '../../types';
+
 interface NextPlayModalProps {
   isOpen: boolean;
   type: 'playing' | 'on_deck';
   participant: Participant;
   court?: Court | null;
   match?: Match | null;
+  proposal?: GroupMatchProposal | null;
   allParticipants: Participant[];
   onAcknowledge: () => void;
   onEnableNotifications?: () => void;
@@ -32,6 +35,7 @@ export const NextPlayModal: React.FC<NextPlayModalProps> = ({
   participant,
   court,
   match,
+  proposal,
   allParticipants,
   onAcknowledge,
   onEnableNotifications,
@@ -43,8 +47,17 @@ export const NextPlayModal: React.FC<NextPlayModalProps> = ({
 
   const getPlayer = (id: string) => allParticipants.find((p) => p.participantId === id);
 
-  const teamAPlayers = match?.teamA ? match.teamA.map(getPlayer).filter(Boolean) as Participant[] : [];
-  const teamBPlayers = match?.teamB ? match.teamB.map(getPlayer).filter(Boolean) as Participant[] : [];
+  const teamAPlayers: Participant[] = match?.teamA
+    ? (match.teamA.map(getPlayer).filter(Boolean) as Participant[])
+    : proposal?.teamA && proposal.teamA.length > 0
+    ? proposal.teamA
+    : [];
+
+  const teamBPlayers: Participant[] = match?.teamB
+    ? (match.teamB.map(getPlayer).filter(Boolean) as Participant[])
+    : proposal?.teamB && proposal.teamB.length > 0
+    ? proposal.teamB
+    : [];
 
   const handleTestChime = () => {
     notificationService.playChime(isPlaying ? 'urgent' : 'alert');
@@ -110,11 +123,11 @@ export const NextPlayModal: React.FC<NextPlayModalProps> = ({
             <SkillBadge skill={participant.skillLevel} />
           </div>
 
-          {/* If Match Roster Available */}
-          {isPlaying && (teamAPlayers.length > 0 || teamBPlayers.length > 0) && (
+          {/* Match Roster / Upcoming Rotation Roster */}
+          {(teamAPlayers.length > 0 || teamBPlayers.length > 0) && (
             <div className="space-y-2 text-xs">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
-                Matchup Roster
+                {isPlaying ? 'Matchup Roster' : 'Upcoming Rotation Lineup'}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <div className="clay-inset rounded-xl p-2.5">

@@ -69,7 +69,7 @@ export const SessionSummary: React.FC<SessionSummaryProps> = ({
             <BrandLogo size="xs" />
             <ProfileAvatarBadge size="xs" />
             <div className="text-left">
-              <h1 className="font-black text-sm sm:text-base text-slate-900 tracking-tight">Session Standings</h1>
+              <h1 className="font-black text-sm sm:text-base text-slate-900 tracking-tight">Pickleheads Open Play Standings</h1>
               <p className="text-[10px] text-slate-500 font-bold">{session.name}</p>
             </div>
           </div>

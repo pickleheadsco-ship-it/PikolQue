@@ -17,6 +17,8 @@ import {
   RotateCcw,
   Sparkles,
   Award,
+  Calendar,
+  Lock,
 } from 'lucide-react';
 import { BrandLogo } from '../components/ui/BrandLogo';
 import { ProfileAvatarBadge } from '../components/profile/ProfileAvatarBadge';
@@ -24,6 +26,7 @@ import { ProfileModal } from '../components/profile/ProfileModal';
 import { FloatingClayIcons } from '../components/ui/FloatingClayIcons';
 import { firePickleballBurst } from '../services/fx/pickleballBurst';
 import { OrganizerLoginModal } from '../components/auth/OrganizerLoginModal';
+import { BookDemoModal } from '../components/demo/BookDemoModal';
 
 interface LandingPageProps {
   onSelectSession: (sessionId: string, mode: 'organizer' | 'player') => void;
@@ -38,8 +41,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
   const [joinCodeError, setJoinCodeError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
 
-  // Organizer Login Modal state
+  // Modals state
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showBookDemoModal, setShowBookDemoModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   // New Session Creation Form state
@@ -316,25 +320,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
             ) : (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-3 py-2 rounded-2xl clay-btn clay-btn-primary text-white text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer"
+                  onClick={() => setShowBookDemoModal(true)}
+                  className="px-4 py-2 rounded-2xl clay-btn clay-btn-primary text-white text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Host Session</span>
-                </button>
-                <button
-                  onClick={handleOpenTerminal}
-                  className="px-3 py-2 rounded-2xl clay-btn clay-btn-secondary text-slate-800 text-xs font-bold flex items-center gap-1 shadow-2xs cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Open Terminal</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Book a Demo</span>
                 </button>
                 <button
                   onClick={() => setShowLoginModal(true)}
-                  className="px-3.5 py-2 rounded-2xl clay-btn clay-btn-secondary text-slate-800 text-xs font-bold flex items-center gap-1.5 shadow-xs hover:border-emerald-300 transition-all"
+                  className="px-3.5 py-2 rounded-2xl clay-btn clay-btn-secondary text-slate-800 text-xs font-bold flex items-center gap-1.5 shadow-xs hover:border-emerald-300 transition-all cursor-pointer"
                 >
-                  <LogIn className="w-4 h-4 text-emerald-600" />
-                  <span>Organizer Login</span>
+                  <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Admin Login</span>
                 </button>
                 <ProfileAvatarBadge
                   size="sm"
@@ -416,48 +413,105 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
 
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-10 sm:mb-12 relative z-20">
-          {/* Card 1: Start New Session */}
-          <div className="clay-card rounded-3xl p-6 flex flex-col justify-between">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 clay-subcard">
-                <PlusCircle className="w-6 h-6" />
+          {isAdmin || isOrganizer ? (
+            <>
+              {/* Authenticated Admin Card 1: Start New Session */}
+              <div className="clay-card rounded-3xl p-6 flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 clay-subcard">
+                    <PlusCircle className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Host an Open-Play Session</h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+                    Configure courts, set matching mode (Balanced, Social Mix, or Skill Separated), and project the queue.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="mt-6 w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Create Session</span>
+                  <ArrowRight className="w-4 h-4 ml-auto" />
+                </button>
               </div>
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">Host an Open-Play Session</h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
-                Configure courts, set matching mode (Balanced, Social Mix, or Skill Separated), and project the queue.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="mt-6 w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs font-black flex items-center justify-center gap-2"
-            >
-              <span>Create Session</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
 
-          {/* Card 2: Quick Demo Run */}
-          <div className="clay-card rounded-3xl p-6 flex flex-col justify-between">
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-4 clay-subcard">
-                <Play className="w-6 h-6" />
+              {/* Authenticated Admin Card 2: Open Terminal */}
+              <div className="clay-card rounded-3xl p-6 flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-4 clay-subcard">
+                    <Play className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Organizer Live Terminal</h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+                    Direct access to the real-time queue dispatcher, court timer, manual matchups, and voice announcer.
+                  </p>
+                </div>
+                <button
+                  onClick={handleOpenTerminal}
+                  className="mt-6 w-full py-3.5 clay-btn clay-btn-sky rounded-2xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Play className="w-4 h-4" />
+                  <span>Open Active Terminal</span>
+                  <ArrowRight className="w-4 h-4 ml-auto" />
+                </button>
               </div>
-              <h2 className="text-lg font-black text-slate-900 tracking-tight">1-Click Live Simulation</h2>
-              <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
-                Launch an active 3-court session with automated queue mechanics to preview live tournament rotation.
-              </p>
-            </div>
-            <button
-              onClick={handleQuickDemoSession}
-              disabled={isCreating}
-              className="mt-6 w-full py-3.5 clay-btn clay-btn-sky rounded-2xl text-xs font-black flex items-center justify-center gap-2 disabled:opacity-40"
-            >
-              <span>{isCreating ? 'Creating...' : 'Launch Demo Session'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+            </>
+          ) : (
+            <>
+              {/* Unauthenticated Card 1: Book a Demo */}
+              <div className="clay-card rounded-3xl p-6 flex flex-col justify-between border-2 border-emerald-300">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4 clay-subcard">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight">Book a Club Demo</h2>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 clay-pill">
+                      For Clubs
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+                    Transform your facility open-play with automated 4-in/4-out rotations, wait tracking, and Reclub roster integration.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowBookDemoModal(true)}
+                  className="mt-6 w-full py-3.5 clay-btn clay-btn-primary rounded-2xl text-xs font-black flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book a Live Demo</span>
+                  <ArrowRight className="w-4 h-4 ml-auto" />
+                </button>
+              </div>
 
-          {/* Card 3: Feature Highlights */}
+              {/* Unauthenticated Card 2: Join Queue by Code */}
+              <div className="clay-card rounded-3xl p-6 flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-4 clay-subcard">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-lg font-black text-slate-900 tracking-tight">Player Queue Access</h2>
+                  <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+                    Have your club court's 6-character code? Enter above to view the queue, track rest times, and see live standings.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const el = document.querySelector('input[placeholder="ENTER 6-CHAR CODE"]') as HTMLInputElement;
+                    if (el) el.focus();
+                  }}
+                  className="mt-6 w-full py-3.5 clay-btn clay-btn-secondary text-slate-800 rounded-2xl text-xs font-black flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span>Enter 6-Char Session Code</span>
+                  <ArrowRight className="w-4 h-4 ml-auto" />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Card 3: Feature Highlights & Fairness */}
           <div className="clay-card-dark rounded-3xl text-white p-6 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -500,13 +554,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
             <div className="py-10 text-center clay-subcard rounded-2xl border-2 border-dashed border-slate-200">
               <Users className="w-8 h-8 text-slate-400 mx-auto mb-2" />
               <p className="text-sm font-extrabold text-slate-800">No sessions currently active.</p>
-              <p className="text-xs text-slate-500 mt-1 mb-4 font-medium">Click below to start the first session.</p>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="clay-btn clay-btn-primary px-5 py-2.5 rounded-2xl text-xs font-black shadow-md"
-              >
-                Create First Session
-              </button>
+              <p className="text-xs text-slate-500 mt-1 mb-4 font-medium">
+                {isAdmin || isOrganizer ? 'Click below to launch an open-play session.' : 'Book a demo to setup your club courts.'}
+              </p>
+              {isAdmin || isOrganizer ? (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="clay-btn clay-btn-primary px-5 py-2.5 rounded-2xl text-xs font-black shadow-md cursor-pointer"
+                >
+                  Create First Session
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBookDemoModal(true)}
+                  className="clay-btn clay-btn-primary px-5 py-2.5 rounded-2xl text-xs font-black shadow-md cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book a Demo</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -531,16 +597,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
                   <div className="mt-5 pt-3 border-t border-slate-200/60 flex flex-col sm:flex-row items-center gap-2">
                     <button
                       onClick={() => onSelectSession(sess.id, 'player')}
-                      className="w-full sm:flex-1 py-2.5 rounded-xl clay-btn clay-btn-secondary text-slate-800 text-xs font-black text-center"
+                      className="w-full sm:flex-1 py-2.5 rounded-xl clay-btn clay-btn-secondary text-slate-800 text-xs font-black text-center cursor-pointer"
                     >
                       Join as Player
                     </button>
-                    <button
-                      onClick={() => onSelectSession(sess.id, 'organizer')}
-                      className="w-full sm:flex-1 py-2.5 rounded-xl clay-btn clay-btn-primary text-white text-xs font-black text-center shadow-md"
-                    >
-                      Organizer Terminal
-                    </button>
+                    {isAdmin || isOrganizer ? (
+                      <button
+                        onClick={() => onSelectSession(sess.id, 'organizer')}
+                        className="w-full sm:flex-1 py-2.5 rounded-xl clay-btn clay-btn-primary text-white text-xs font-black text-center shadow-md cursor-pointer"
+                      >
+                        Organizer Terminal
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setShowLoginModal(true)}
+                        className="w-full sm:flex-1 py-2.5 rounded-xl clay-btn clay-btn-secondary text-slate-700 text-xs font-bold text-center flex items-center justify-center gap-1.5 cursor-pointer hover:border-emerald-300"
+                        title="Admin authentication required to manage session"
+                      >
+                        <Lock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Admin Access</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -664,6 +741,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
       <OrganizerLoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+        onOpenBookDemo={() => setShowBookDemoModal(true)}
         onSuccess={(action) => {
           setShowLoginModal(false);
           if (action === 'admin') {
@@ -679,6 +757,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelectSession, onOpe
             }
           }
         }}
+      />
+
+      {/* Book a Demo Modal */}
+      <BookDemoModal
+        isOpen={showBookDemoModal}
+        onClose={() => setShowBookDemoModal(false)}
+        onOpenLogin={() => setShowLoginModal(true)}
       />
 
       {/* Player Profile & Photo Upload Modal */}

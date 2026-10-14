@@ -115,22 +115,110 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
   }, [participants]);
 
   return (
-    <div className="clay-card rounded-3xl overflow-hidden shadow-xl transition-all">
+    <div className="clay-card rounded-3xl overflow-hidden shadow-xl transition-all relative bg-gradient-to-b from-white via-emerald-950/[0.02] to-slate-50">
+      {/* Authentic Pickleball Court Theme Background Layer */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.14] overflow-hidden" aria-hidden="true">
+        <svg className="w-full h-full" viewBox="0 0 1000 600" fill="none" preserveAspectRatio="none">
+          <defs>
+            {/* Court Surface Gradients */}
+            <linearGradient id="courtGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#047857" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#065f46" stopOpacity="0.5" />
+            </linearGradient>
+            <linearGradient id="kitchenClay" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#0f766e" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#115e59" stopOpacity="0.45" />
+            </linearGradient>
+            <pattern id="netMesh" width="10" height="10" patternUnits="userSpaceOnUse">
+              <path d="M 0 10 L 10 0 M 0 0 L 10 10" stroke="#064e3b" strokeWidth="0.8" opacity="0.6" />
+            </pattern>
+          </defs>
+
+          {/* Out-of-bounds Perimeter Apron */}
+          <rect x="0" y="0" width="1000" height="600" fill="#022c22" fillOpacity="0.08" />
+
+          {/* In-bounds Court Surface */}
+          <rect x="50" y="40" width="900" height="520" rx="8" fill="url(#courtGreen)" stroke="#059669" strokeWidth="6" />
+
+          {/* Non-Volley Zone (The Kitchen) - 7ft each side of the net */}
+          <rect x="360" y="40" width="280" height="520" fill="url(#kitchenClay)" />
+
+          {/* Non-Volley Zone Boundary Lines */}
+          <line x1="360" y1="40" x2="360" y2="560" stroke="#10b981" strokeWidth="5" />
+          <line x1="640" y1="40" x2="640" y2="560" stroke="#10b981" strokeWidth="5" />
+
+          {/* Center Service Dividing Lines (Baseline to Kitchen Line) */}
+          <line x1="50" y1="300" x2="360" y2="300" stroke="#10b981" strokeWidth="5" />
+          <line x1="640" y1="300" x2="950" y2="300" stroke="#10b981" strokeWidth="5" />
+
+          {/* The Net - Center (x = 500) */}
+          <rect x="495" y="30" width="10" height="540" fill="url(#netMesh)" />
+          <line x1="500" y1="20" x2="500" y2="580" stroke="#064e3b" strokeWidth="6" strokeDasharray="8 4" />
+          {/* Net Posts */}
+          <circle cx="500" cy="25" r="7" fill="#047857" />
+          <circle cx="500" cy="575" r="7" fill="#047857" />
+
+          {/* Court Labels Watermark */}
+          <text x="500" y="295" textAnchor="middle" fill="#065f46" fontSize="14" fontWeight="900" letterSpacing="4" opacity="0.7">
+            NVZ • THE KITCHEN
+          </text>
+          <text x="205" y="170" textAnchor="middle" fill="#065f46" fontSize="12" fontWeight="800" letterSpacing="2" opacity="0.5">
+            LEFT SERVICE COURT
+          </text>
+          <text x="205" y="430" textAnchor="middle" fill="#065f46" fontSize="12" fontWeight="800" letterSpacing="2" opacity="0.5">
+            RIGHT SERVICE COURT
+          </text>
+          <text x="795" y="170" textAnchor="middle" fill="#065f46" fontSize="12" fontWeight="800" letterSpacing="2" opacity="0.5">
+            RIGHT SERVICE COURT
+          </text>
+          <text x="795" y="430" textAnchor="middle" fill="#065f46" fontSize="12" fontWeight="800" letterSpacing="2" opacity="0.5">
+            LEFT SERVICE COURT
+          </text>
+
+          {/* Perforated Pickleball Watermark */}
+          <g transform="translate(190, 275)" opacity="0.35">
+            <circle cx="0" cy="0" r="32" stroke="#10b981" strokeWidth="2.5" fill="none" />
+            <circle cx="-12" cy="-10" r="3.5" fill="#10b981" />
+            <circle cx="12" cy="-10" r="3.5" fill="#10b981" />
+            <circle cx="0" cy="-14" r="3.5" fill="#10b981" />
+            <circle cx="-16" cy="6" r="3.5" fill="#10b981" />
+            <circle cx="16" cy="6" r="3.5" fill="#10b981" />
+            <circle cx="-6" cy="16" r="3.5" fill="#10b981" />
+            <circle cx="6" cy="16" r="3.5" fill="#10b981" />
+            <circle cx="0" cy="0" r="4" fill="#10b981" />
+          </g>
+
+          <g transform="translate(810, 275)" opacity="0.35">
+            <circle cx="0" cy="0" r="32" stroke="#10b981" strokeWidth="2.5" fill="none" />
+            <circle cx="-12" cy="-10" r="3.5" fill="#10b981" />
+            <circle cx="12" cy="-10" r="3.5" fill="#10b981" />
+            <circle cx="0" cy="-14" r="3.5" fill="#10b981" />
+            <circle cx="-16" cy="6" r="3.5" fill="#10b981" />
+            <circle cx="16" cy="6" r="3.5" fill="#10b981" />
+            <circle cx="-6" cy="16" r="3.5" fill="#10b981" />
+            <circle cx="6" cy="16" r="3.5" fill="#10b981" />
+            <circle cx="0" cy="0" r="4" fill="#10b981" />
+          </g>
+        </svg>
+      </div>
+
       {/* Header bar */}
       {showTitle && (
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white/70">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-white/80 backdrop-blur-xs relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center clay-subcard">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center clay-subcard shadow-xs">
               <Trophy className="w-5 h-5 text-amber-600" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-black text-slate-900 text-base tracking-tight">Live Leaderboard</h3>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 animate-pulse">
+                <h3 className="font-black text-slate-900 text-base sm:text-lg tracking-tight">
+                  Pickleheads Open Play Standings
+                </h3>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 animate-pulse clay-pill">
                   Live
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium">Real-time standings, win rates & player rotation</p>
+              <p className="text-xs text-slate-500 font-medium">Real-time court standings, win rates & fair rotation ranking</p>
             </div>
           </div>
 
@@ -232,26 +320,59 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
       ) : (
         <>
           {/* MOBILE VIEW (< 768px): Card based */}
-          <div className="block md:hidden p-3.5 space-y-2.5">
+          <div className="block md:hidden p-3.5 space-y-2.5 relative z-10">
             {sortedPlayers.map((player, idx) => {
               const isHighlighted = highlightParticipantId === player.participantId;
               const courtPlaying = courtByParticipantId.get(player.participantId);
               const rank = idx + 1;
+              const isTop1 = rank === 1;
+              const isTop2 = rank === 2;
+              const isTop3 = rank === 3;
+
+              let cardBg = 'clay-subcard border-slate-200/60';
+              if (isHighlighted) {
+                cardBg = 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-400 shadow-md';
+              } else if (isTop1) {
+                cardBg = 'bg-gradient-to-br from-amber-50 via-yellow-50/80 to-emerald-50/30 border-2 border-amber-400 ring-2 ring-amber-300/60 shadow-md';
+              } else if (isTop2) {
+                cardBg = 'bg-gradient-to-br from-slate-100/90 via-slate-50 to-white border-2 border-slate-300 shadow-xs ring-1 ring-slate-300/50';
+              } else if (isTop3) {
+                cardBg = 'bg-gradient-to-br from-amber-50/40 via-orange-50/20 to-white border-2 border-amber-600/40 shadow-xs ring-1 ring-amber-600/30';
+              }
 
               return (
                 <div
                   key={player.participantId}
-                  className={`p-3.5 rounded-2xl transition-all border flex flex-col gap-2 ${
-                    isHighlighted
-                      ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-400 shadow-md'
-                      : 'clay-subcard border-slate-200/60'
-                  }`}
+                  className={`p-3.5 rounded-2xl transition-all border flex flex-col gap-2 relative overflow-hidden ${cardBg}`}
                 >
+                  {/* Visual Top Seed Badge for Rank 1 */}
+                  {isTop1 && (
+                    <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-400 to-yellow-400 text-slate-950 font-black text-[9px] px-3 py-0.5 rounded-bl-xl uppercase tracking-wider shadow-xs flex items-center gap-1">
+                      <span>👑</span>
+                      <span>Top Seed</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-7 text-center font-black font-mono text-sm">
-                        {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
-                      </span>
+                      {isTop1 ? (
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-amber-300">
+                          🥇
+                        </span>
+                      ) : isTop2 ? (
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-slate-300">
+                          🥈
+                        </span>
+                      ) : isTop3 ? (
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 text-amber-100 font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-amber-600">
+                          🥉
+                        </span>
+                      ) : (
+                        <span className="w-7 text-center font-black font-mono text-sm text-slate-600">
+                          #{rank}
+                        </span>
+                      )}
+
                       {player.avatarUrl ? (
                         <img
                           src={player.avatarUrl}
@@ -325,11 +446,11 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
           </div>
 
           {/* DESKTOP VIEW (>= 768px): Structured Table */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto relative z-10">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-100/60 text-slate-500 font-black uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-4 text-center w-14">Rank</th>
+                <tr className="border-b border-slate-200/80 bg-slate-100/70 text-slate-500 font-black uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-4 text-center w-16">Rank</th>
                   <th className="py-3 px-4">Player</th>
                   <th className="py-3 px-3">Live Status</th>
                   <th className="py-3 px-3">Skill</th>
@@ -345,21 +466,45 @@ export const LiveLeaderboard: React.FC<LiveLeaderboardProps> = ({
                   const isHighlighted = highlightParticipantId === player.participantId;
                   const courtPlaying = courtByParticipantId.get(player.participantId);
                   const rank = idx + 1;
+                  const isTop1 = rank === 1;
+                  const isTop2 = rank === 2;
+                  const isTop3 = rank === 3;
+
+                  let rowStyle = idx % 2 === 0 ? 'bg-white hover:bg-slate-50/70' : 'bg-slate-50/30 hover:bg-slate-50/70';
+                  if (isHighlighted) {
+                    rowStyle = 'bg-amber-50/80 font-bold';
+                  } else if (isTop1) {
+                    rowStyle = 'bg-gradient-to-r from-amber-100/70 via-yellow-50/40 to-transparent border-l-4 border-l-amber-500 font-bold hover:bg-amber-100/90';
+                  } else if (isTop2) {
+                    rowStyle = 'bg-gradient-to-r from-slate-100/80 via-slate-50/40 to-transparent border-l-4 border-l-slate-400 font-bold hover:bg-slate-100/90';
+                  } else if (isTop3) {
+                    rowStyle = 'bg-gradient-to-r from-amber-50/40 via-orange-50/20 to-transparent border-l-4 border-l-amber-700/60 font-bold hover:bg-amber-50/70';
+                  }
 
                   return (
                     <tr
                       key={player.participantId}
-                      className={`transition-colors ${
-                        isHighlighted
-                          ? 'bg-amber-50/80 font-bold'
-                          : idx % 2 === 0
-                          ? 'bg-white hover:bg-slate-50/70'
-                          : 'bg-slate-50/30 hover:bg-slate-50/70'
-                      }`}
+                      className={`transition-colors ${rowStyle}`}
                     >
-                      {/* Rank */}
-                      <td className="py-3 px-4 text-center font-mono font-black text-sm">
-                        {rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `#${rank}`}
+                      {/* Rank with Top 3 Visual Highlights */}
+                      <td className="py-3 px-4 text-center">
+                        {isTop1 ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black shadow-xs ring-1 ring-amber-300 text-xs">
+                            🥇 1st
+                          </span>
+                        ) : isTop2 ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-slate-200 to-slate-300 text-slate-800 font-black shadow-xs ring-1 ring-slate-300 text-xs">
+                            🥈 2nd
+                          </span>
+                        ) : isTop3 ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 text-amber-100 font-black shadow-xs ring-1 ring-amber-600 text-xs">
+                            🥉 3rd
+                          </span>
+                        ) : (
+                          <span className="font-mono font-black text-slate-700 text-sm">
+                            #{rank}
+                          </span>
+                        )}
                       </td>
 
                       {/* Name */}
